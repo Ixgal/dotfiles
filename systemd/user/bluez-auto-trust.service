@@ -1,0 +1,12 @@
+[Unit]
+Description=Auto-trust paired Bluetooth devices
+After=bluetooth.service
+
+[Service]
+Type=simple
+ExecStart=/home/jairo/.local/bin/bluez-auto-trust.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

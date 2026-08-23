@@ -1,0 +1,9 @@
+configuration {
+    show-icons: true;
+    icon-theme: "Adwaita";
+    drun-display-format: "{name}";
+}
+
+//@theme "/home/jairo/.config/rofi/purple.rasi"
+
+@theme "/usr/share/rofi/themes/purple.rasi"

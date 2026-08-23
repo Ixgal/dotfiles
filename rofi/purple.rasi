@@ -1,0 +1,123 @@
+* {
+    font:                       "Noto Sans 12";
+    bg:                         rgba(48, 30, 98, 0.35);
+    bg-selected:                rgba(139, 92, 246, 0.32);
+    bg-input:                   rgba(255, 255, 255, 0.05);
+    fg:                         #c4b5fd;
+    fg-bright:                  #ffffff;
+    fg-dim:                     #8b84a8;
+    accent:                     #c084fc;
+    border-color:               rgba(192, 132, 252, 0.30);
+    radius:                     20px;
+    radius-sm:                  10px;
+}
+
+window {
+    background-color:           @bg;
+    border:                     1px;
+    border-color:               @border-color;
+    border-radius:              @radius;
+    width:                      30em;
+    padding:                    0px;
+}
+
+mainbox {
+    padding:                    0px;
+    spacing:                    0px;
+}
+
+/* search box */
+inputbar {
+    background-color:           transparent;
+    padding:                    12px 12px 6px 12px;
+    spacing:                    6px;
+    children:                   [ prompt, entry ];
+}
+
+prompt {
+    text-color:                 @accent;
+}
+
+textbox-prompt-colon {
+    text-color:                 @fg-dim;
+    str:                        "";
+}
+
+entry {
+    background-color:           @bg-input;
+    border:                     1px;
+    border-color:               @border-color;
+    border-radius:              @radius-sm;
+    padding:                    6px 10px;
+    text-color:                 @fg-bright;
+}
+
+case-indicator {
+    text-color:                 @fg-dim;
+}
+
+/* app list */
+listview {
+    padding:                    4px 8px 8px 8px;
+    spacing:                    3px;
+    lines:                      6;
+    scrollbar:                  false;
+}
+
+element {
+    background-color:           transparent;
+    border-radius:              @radius-sm;
+    padding:                    5px 10px;
+}
+
+element normal normal {
+    text-color:                 @fg;
+}
+
+element selected normal {
+    background-color:           @bg-selected;
+    border-radius:              @radius-sm;
+}
+
+element-icon {
+    size:                       1.6em;
+    margin:                     0px 8px 0px 0px;
+}
+
+element-text {
+    text-color:                 @fg;
+}
+
+scrollbar {
+    width:                      0px;
+    handle-width:               0px;
+    background-color:           transparent;
+    handle-color:               transparent;
+}
+
+mode-switcher {
+    background-color:           transparent;
+    border:                     0px;
+    padding:                    0px;
+}
+
+button {
+    padding:                    3px 10px;
+    border-radius:              @radius-sm;
+    text-color:                 @fg-dim;
+}
+
+button selected {
+    background-color:           @bg-selected;
+    text-color:                 @fg-bright;
+}
+
+message {
+    background-color:           transparent;
+    border:                     0px;
+    padding:                    8px 12px;
+}
+
+textbox {
+    text-color:                 @fg-dim;
+}

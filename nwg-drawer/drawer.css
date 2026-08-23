@@ -1,0 +1,85 @@
+window {
+    background-color: rgba(120, 70, 180, 0.22);
+    background-image: linear-gradient(170deg, rgba(205, 140, 220, 0.32), rgba(125, 75, 190, 0.22));
+    color: #ede9fe;
+    border: 1px solid rgba(215, 160, 235, 0.38);
+    border-radius: 14px;
+    padding: 6px;
+}
+
+/* search entry */
+entry {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #f5f3ff;
+    border: 1px solid rgba(192, 132, 252, 0.30);
+    border-radius: 10px;
+    padding: 6px 10px;
+    caret-color: #c084fc;
+}
+
+selection {
+    background-color: rgba(139, 92, 246, 0.55);
+    color: #ffffff;
+}
+
+image {
+    background: none;
+    border: none;
+}
+
+/* apps: sin fondo aparte, resaltan por tono más claro que el fondo */
+button {
+    background: none;
+    border: none;
+    border-radius: 12px;
+    padding: 4px 6px;
+}
+
+button:hover {
+    background-color: rgba(139, 92, 246, 0.30);
+}
+
+button:hover image {
+    color: #ffffff;
+}
+
+button:hover label {
+    color: #ffffff;
+}
+
+button label {
+    color: #f0e9ff;
+    font-size: 11px;
+}
+
+/* category buttons: discretos (sin tarjeta) */
+#category-button {
+    background-color: transparent;
+    margin: 0 4px;
+    padding: 4px 8px;
+    border-radius: 8px;
+}
+
+#category-button:hover {
+    background-color: rgba(192, 132, 252, 0.14);
+    color: #f5f3ff;
+}
+
+#pinned-box {
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(192, 132, 252, 0.18);
+}
+
+#files-box {
+    padding: 4px;
+    border: 1px solid rgba(192, 132, 252, 0.16);
+    border-radius: 12px;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* math operation result label */
+#math-label {
+    font-weight: bold;
+    font-size: 15px;
+    color: #c084fc;
+}
