@@ -1,0 +1,90 @@
+// =============================================================
+// DOCK INFERIOR — mismo estilo que la barra superior.
+// Wlr/taskbar: clic izquierdo = minimize-raise (minimiza la app
+// activa / restaura la minimizada). Clic central = cerrar.
+// Clic derecho = traer al frente.
+// =============================================================
+{
+    "position": "bottom",
+    "layer": "top",
+    "height": 38,
+    "spacing": 6,
+    "margin-bottom": 8,
+    "margin-left": 8,
+    "margin-right": 8,
+
+    "modules-left": [
+        "custom/sep-launchers",
+        "custom/firefox",
+        "custom/discord",
+        "custom/spotify",
+        "custom/brave",
+        "custom/nautilus",
+        "custom/kitty",
+        "custom/steam",
+        "custom/sep-tasks"
+    ],
+
+    "modules-center": [
+        "wlr/taskbar"
+    ],
+
+    "modules-right": [
+    ],
+
+    "custom/sep-launchers": { "format": "", "tooltip": false },
+    "custom/sep-tasks":     { "format": "", "tooltip": false },
+
+    // ============= LANZADORES (glifos Nerd Font) =============
+    "custom/firefox": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh firefox firefox"
+    },
+
+    "custom/discord": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh discord discord"
+    },
+
+    "custom/spotify": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.spotify.Client Spotify' flatpak run com.spotify.Client"
+    },
+
+    "custom/brave": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.brave.Browser Brave-browser Brave' flatpak run com.brave.Browser"
+    },
+
+    "custom/nautilus": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'org.gnome.Nautilus' nautilus"
+    },
+
+    "custom/kitty": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh kitty kitty"
+    },
+
+    "custom/steam": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh steam steam"
+    },
+
+    // ============= BARRA DE TAREAS (ventanas abiertas) =============
+    "wlr/taskbar": {
+        "all-outputs": true,
+        "icon-size": 18,
+        "sort-by-id": true,
+        "on-click": "minimize-raise",
+        "on-click-middle": "close",
+        "on-click-right": "maximize"
+    }
+}

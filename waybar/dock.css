@@ -1,0 +1,106 @@
+/* Dock inferior — replica el estilo de la barra superior (style.css) */
+* {
+    font-family: "Symbols Nerd Font", "Noto Sans", sans-serif;
+    font-size: 13px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+window#waybar {
+    background: linear-gradient(180deg, rgba(42, 28, 78, 0.70), rgba(20, 12, 42, 0.55));
+    border: 1px solid rgba(192, 132, 252, 0.25);
+    border-radius: 14px;
+    color: #ede9fe;
+}
+
+window#waybar.hidden {
+    opacity: 0.15;
+}
+
+tooltip {
+    background: rgba(28, 17, 56, 0.92);
+    border: 1px solid rgba(192, 132, 252, 0.30);
+    border-radius: 10px;
+    color: #ede9fe;
+}
+
+tooltip label {
+    color: #ede9fe;
+}
+
+.modules-left, .modules-right {
+    margin: 0 3px;
+}
+
+button, .module {
+    border-radius: 9px;
+    padding: 0 7px;
+    margin: 2px 1px;
+    background-color: rgba(255, 255, 255, 0.04);
+    transition: background-color 0.2s ease, color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+button:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ---- Lanzadores ---- */
+#custom-firefox, #custom-discord, #custom-brave, #custom-spotify,
+#custom-steam, #custom-nautilus, #custom-kitty {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
+    font-size: 18px;
+    padding: 0 8px;
+}
+
+#custom-firefox:hover, #custom-discord:hover, #custom-brave:hover,
+#custom-spotify:hover, #custom-steam:hover, #custom-nautilus:hover,
+#custom-kitty:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+}
+
+/* ---- Barra de tareas (estilo igual que workspaces) ---- */
+#taskbar {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 9px;
+    padding: 0 3px;
+    margin: 2px 1px;
+}
+
+#taskbar button {
+    background: transparent;
+    padding: 0 6px;
+    color: #8b84a8;
+}
+
+#taskbar button:hover {
+    background: rgba(192, 132, 252, 0.12);
+    color: #ddd3f5;
+}
+
+#taskbar button.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(192, 132, 252, 0.70));
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.50);
+}
+
+#taskbar button.urgent {
+    background-color: #ef4444;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+#taskbar button image {
+    -gtk-icon-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- Reloj ---- */
+#clock {
+    font-weight: 700;
+    background: rgba(192, 132, 252, 0.08);
+    color: #f5f3ff;
+    padding: 0 10px;
+}
