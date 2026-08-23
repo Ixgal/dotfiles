@@ -72,9 +72,14 @@ link_dotfiles() {
     backup_and_link "$DOTFILES_DIR/hypr/hyprland.conf"  "$HOME/.config/hypr/hyprland.conf"
     backup_and_link "$DOTFILES_DIR/hypr/hyprpaper.conf" "$HOME/.config/hypr/hyprpaper.conf"
 
-    # Hyprland lua config (si existe en dotfiles)
-    [ -f "$DOTFILES_DIR/hypr/hyprland.lua" ] && \
-        backup_and_link "$DOTFILES_DIR/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
+    # Hyprland lua config
+    backup_and_link "$DOTFILES_DIR/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
+
+    # Wallpapers
+    if [ -d "$DOTFILES_DIR/wallpapers" ]; then
+        mkdir -p "$HOME/Pictures/Wallpapers"
+        cp -rn "$DOTFILES_DIR/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
+    fi
 
     # Kitty
     mkdir -p "$HOME/.config/kitty"
