@@ -1,0 +1,4 @@
+com.brave.Browser
+com.github.eneshecan.WhatsAppForLinux
+com.spotify.Client
+org.vinegarhq.Sober

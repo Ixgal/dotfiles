@@ -1,0 +1,9 @@
+binder_linux-dkms
+claude
+eww-git
+eww-git-debug
+linux-wallpaperengine-git
+linux-wallpaperengine-git-debug
+xpadneo-dkms
+yay
+yay-debug
