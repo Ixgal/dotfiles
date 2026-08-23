@@ -1,0 +1,90 @@
+$bg:       rgba(84, 52, 148, 0.55);
+$bg-hover: rgba(112, 76, 190, 0.5);
+$border:   rgba(180, 150, 255, 0.4);
+$fg:       #f0eaff;
+$fg-dim:   #c6b2ec;
+$accent:   #c9a8ff;
+
+* {
+    all: unset;
+    font-family: "Noto Sans CJK SC", "Noto Sans", "sans-serif";
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.wallpaper-menu {
+    background-color: $bg;
+    border: 1px solid $border;
+    border-radius: 16px;
+    padding: 14px;
+}
+
+.wallpaper-header {
+    margin-bottom: 12px;
+}
+
+.wallpaper-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: $fg;
+}
+
+.wallpaper-close {
+    color: $fg-dim;
+    padding: 2px 8px;
+    border-radius: 8px;
+    &:hover {
+        color: $fg;
+        background-color: $bg-hover;
+    }
+}
+
+.wallpaper-scroll {
+    margin-right: -8px;
+    padding-right: 8px;
+}
+
+.wallpaper-section-title {
+    color: $accent;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+.wallpaper-empty {
+    color: $fg-dim;
+    font-size: 12px;
+}
+
+.wallpaper-list {
+    margin-bottom: 8px;
+}
+
+.wall-item {
+    border-radius: 12px;
+    background-color: $bg-hover;
+    border: 1px solid rgba(190, 160, 255, 0.18);
+    transition: 0.15s ease;
+
+    &:hover {
+        background-color: rgba(130, 92, 210, 0.55);
+        border-color: $border;
+    }
+}
+
+.wall-item-inner {
+    border-radius: 12px;
+}
+
+.wall-thumb {
+    background-color: rgba(50, 30, 90, 0.6);
+    border-radius: 12px 12px 0 0;
+}
+
+.wall-name {
+    color: $fg;
+    padding: 7px 9px;
+    font-size: 11px;
+    min-width: 0px;
+}
