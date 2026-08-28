@@ -1,0 +1,546 @@
+#!/usr/bin/env python3
+import json
+import os
+import re
+import subprocess
+import sys
+import threading
+import socket
+import time
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+from gi.repository import Gdk, GLib, Gtk  # noqa: E402
+
+WIDTH = 280
+TOP_BAR_MARGIN = 6
+TOP_BAR_HEIGHT = 34
+POPUP_GAP = 4
+HYPRLUA = os.path.expanduser("~/.config/hypr/hyprland.lua")
+
+LOCK = "/tmp/.monitor_popup.pid"
+orig_follow_mouse = [1]
+
+
+def get_monitors():
+    try:
+        out = subprocess.run(
+            ["hyprctl", "-j", "monitors"], capture_output=True, text=True,
+        ).stdout
+        return json.loads(out or "[]")
+    except Exception:
+        return []
+
+
+def get_active_monitor():
+    monitors = get_monitors()
+    for m in monitors:
+        if m.get("focused"):
+            return m
+    return monitors[0] if monitors else None
+
+
+def parse_mode(mode_str):
+    parts = mode_str.split("@")
+    if len(parts) == 2:
+        res = parts[0]
+        hz = parts[1].replace("Hz", "")
+        return res, float(hz)
+    return mode_str, 0.0
+
+
+def apply_and_save(monitor_name, mode_str):
+    subprocess.run(
+        ["hyprctl", "eval",
+         f'hl.monitor({{output = "{monitor_name}", mode = "{mode_str}", '
+         f'position = "auto", scale = "auto"}})'],
+        capture_output=True, text=True,
+    )
+    save_to_config(monitor_name, mode_str)
+
+
+def save_to_config(monitor_name, mode_str):
+    try:
+        with open(HYPRLUA, "r") as f:
+            content = f.read()
+    except OSError:
+        return
+
+    new_block = (
+        f'hl.monitor({{\n'
+        f'    output   = "{monitor_name}",\n'
+        f'    mode     = "{mode_str}",\n'
+        f'    position = "auto",\n'
+        f'    scale    = "auto",\n'
+        f'}})\n'
+    )
+
+    monitors_hdr = "---- MONITORS ----"
+    programs_hdr = "---- MY PROGRAMS ----"
+    i = content.find(monitors_hdr)
+    j = content.find(programs_hdr)
+
+    if i >= 0 and j > i:
+        before = content[:i]
+        after_programs = content[j:]
+
+        # Extract the comment lines between header and first hl.monitor
+        section = content[i:j]
+        comment_lines = []
+        for line in section.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("--") or stripped == "" or stripped.startswith("----"):
+                comment_lines.append(line)
+            else:
+                break
+        comment_text = "\n".join(comment_lines).rstrip("\n")
+
+        content = (
+            before
+            + comment_text
+            + "\n\n"
+            + new_block
+            + "\n"
+            + after_programs
+        )
+        with open(HYPRLUA, "w") as f:
+            f.write(content)
+        return
+
+    # Fallback
+    import re as _re
+    pattern = r'hl\.monitor\(\{[^}]*\}\)'
+    content = _re.sub(pattern, new_block.strip(), content, count=1)
+    with open(HYPRLUA, "w") as f:
+        f.write(content)
+
+
+# ── CSS ──
+css = b"""
+window {
+    background: linear-gradient(180deg, rgba(42, 28, 78, 0.88), rgba(20, 12, 42, 0.72));
+    border: 1px solid rgba(192, 132, 252, 0.35);
+    border-radius: 10px;
+}
+label.title {
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px 10px 2px 10px;
+}
+label.monitor-name {
+    color: #a78bfa;
+    font-size: 10px;
+    padding: 0 10px 6px 10px;
+}
+button.mode-btn {
+    background: rgba(139, 92, 246, 0.12);
+    color: #c4b5fd;
+    border: 1px solid rgba(192, 132, 252, 0.15);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 10px;
+    min-height: 18px;
+}
+button.mode-btn:hover {
+    background: rgba(139, 92, 246, 0.30);
+    color: #ede9fe;
+}
+button.mode-btn.selected {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.90), rgba(192, 132, 252, 0.65));
+    color: #ffffff;
+    border-color: rgba(192, 132, 252, 0.50);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.45);
+}
+button.mode-btn.current {
+    background: rgba(34, 197, 94, 0.20);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.30);
+}
+button.apply-btn {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(168, 85, 247, 0.85));
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 0;
+    font-size: 11px;
+    font-weight: bold;
+    min-height: 20px;
+    margin: 4px 10px 8px 10px;
+}
+button.apply-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1.0), rgba(192, 132, 252, 0.85));
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.60);
+}
+button.apply-btn:disabled {
+    background: rgba(139, 92, 246, 0.20);
+    color: #6b5b8a;
+}
+scrollwin { background: transparent; }
+scrollbar { background: transparent; }
+scrollbar slider {
+    background: rgba(192, 132, 252, 0.30);
+    border-radius: 999px;
+    min-height: 20px;
+    min-width: 4px;
+}
+"""
+provider = Gtk.CssProvider()
+provider.load_from_data(css)
+Gtk.StyleContext.add_provider_for_screen(
+    Gdk.Screen.get_default(), provider,
+    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+)
+
+# ── Window ──
+win = Gtk.Window()
+win.set_decorated(False)
+win.set_resizable(False)
+win.set_skip_taskbar_hint(True)
+win.set_skip_pager_hint(True)
+win.set_keep_above(True)
+win.set_default_size(WIDTH, 10)
+
+vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+win.add(vbox)
+
+monitor = get_active_monitor()
+selected_mode = [None]
+current_mode_str = f"{monitor['width']}x{monitor['height']}@{monitor['refreshRate']:.2f}Hz" if monitor else ""
+
+if not monitor:
+    lbl = Gtk.Label(label="No hay monitor conectado")
+    lbl.get_style_context().add_class("title")
+    vbox.pack_start(lbl, False, False, 8)
+else:
+    title_lbl = Gtk.Label(label="Configurar Monitor")
+    title_lbl.get_style_context().add_class("title")
+    title_lbl.set_xalign(0)
+    vbox.pack_start(title_lbl, False, False, 0)
+
+    name_lbl = Gtk.Label(label=f"{monitor['name']}  —  {monitor['description']}")
+    name_lbl.get_style_context().add_class("monitor-name")
+    name_lbl.set_xalign(0)
+    vbox.pack_start(name_lbl, False, False, 0)
+
+    available = monitor.get("availableModes", [])
+    seen = set()
+    unique_modes = []
+    for m in available:
+        res, hz = parse_mode(m)
+        key = (res, round(hz))
+        if key not in seen:
+            seen.add(key)
+            unique_modes.append((res, hz, m))
+
+    def sort_key(item):
+        res, hz, _ = item
+        w, h = 0, 0
+        if "x" in res:
+            p = res.split("x")
+            try:
+                w, h = int(p[0]), int(p[1])
+            except ValueError:
+                pass
+        return (-w * h, -hz)
+
+    unique_modes.sort(key=sort_key)
+
+    scroll = Gtk.ScrolledWindow()
+    scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    scroll.set_min_content_height(min(len(unique_modes) * 26 + 8, 180))
+    scroll.set_max_content_height(200)
+    scroll.get_style_context().add_class("scrollwin")
+    vbox.pack_start(scroll, True, True, 0)
+
+    mode_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+    mode_box.set_margin_start(6)
+    mode_box.set_margin_end(6)
+    mode_box.set_margin_top(4)
+    mode_box.set_margin_bottom(2)
+    scroll.add(mode_box)
+
+    current_res = f"{monitor['width']}x{monitor['height']}"
+    current_hz = round(monitor["refreshRate"])
+
+    apply_btn = Gtk.Button(label="Aplicar")
+    apply_btn.get_style_context().add_class("apply-btn")
+    apply_btn.set_sensitive(False)
+    vbox.pack_start(apply_btn, False, False, 0)
+
+    all_mode_btns = []
+
+    def on_apply(_btn):
+        if selected_mode[0]:
+            apply_and_save(monitor["name"], selected_mode[0])
+            Gtk.main_quit()
+
+    apply_btn.connect("clicked", on_apply)
+
+    def make_select_handler(m, btn_ref):
+        def handler(_b):
+            selected_mode[0] = m
+            apply_btn.set_sensitive(True)
+            for b in all_mode_btns:
+                b.get_style_context().remove_class("selected")
+            btn_ref.get_style_context().add_class("selected")
+        return handler
+
+    for res, hz, raw in unique_modes:
+        btn = Gtk.Button(label=f"{res}  @  {hz:.0f} Hz")
+        btn.get_style_context().add_class("mode-btn")
+
+        is_current = res == current_res and round(hz) == current_hz
+        if is_current:
+            btn.get_style_context().add_class("current")
+            btn.set_label(f"{res}  @  {hz:.0f} Hz  ●")
+
+        btn.connect("clicked", make_select_handler(raw, btn))
+        all_mode_btns.append(btn)
+        mode_box.pack_start(btn, False, False, 0)
+
+
+# ── Hyprland event handling ──
+def on_key(_widget, event) -> bool:
+    if event.keyval == Gdk.KEY_Escape:
+        Gtk.main_quit()
+        return True
+    return False
+
+
+def get_self_address():
+    pid = os.getpid()
+    try:
+        out = subprocess.run(
+            ["hyprctl", "-j", "clients"], capture_output=True, text=True,
+        ).stdout or "[]"
+        for c in json.loads(out):
+            if c.get("pid") == pid:
+                return c.get("address")
+    except Exception:
+        pass
+    return None
+
+
+def get_follow_mouse() -> int:
+    try:
+        out = subprocess.run(
+            ["hyprctl", "getoption", "input:follow_mouse", "-j"],
+            capture_output=True, text=True,
+        ).stdout or "{}"
+        return int(json.loads(out).get("int", 1))
+    except Exception:
+        return 1
+
+
+def set_follow_mouse(v: int) -> None:
+    try:
+        out = subprocess.run(
+            ["hyprctl", "eval", f"hl.config({{ input = {{ follow_mouse = {v} }} }})"],
+            capture_output=True, text=True,
+        )
+        if out.returncode == 0:
+            return
+    except Exception:
+        pass
+    try:
+        subprocess.run(
+            ["hyprctl", "keyword", "input:follow_mouse", str(v)],
+            capture_output=True,
+        )
+    except Exception:
+        pass
+
+
+def read_lock():
+    try:
+        with open(LOCK) as fh:
+            parts = fh.read().strip().split(":")
+            return int(parts[0]), int(parts[1])
+    except (OSError, ValueError, IndexError):
+        return None, None
+
+
+def restore_follow_mouse() -> None:
+    set_follow_mouse(orig_follow_mouse[0])
+    try:
+        with open(LOCK, "w") as fh:
+            fh.write(f"0:{orig_follow_mouse[0]}")
+    except OSError:
+        pass
+
+
+def watch_hypr_events() -> None:
+    sig = os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", "")
+    if not sig:
+        return
+    runtime = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    sock_path = f"{runtime}/hypr/{sig}/.socket2.sock"
+    try:
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(sock_path)
+        s.settimeout(0.3)
+    except OSError:
+        return
+    self_addr = [None]
+    start = time.monotonic()
+    buf = b""
+    try:
+        while True:
+            try:
+                data = s.recv(4096)
+            except socket.timeout:
+                continue
+            except OSError:
+                break
+            if not data:
+                break
+            buf += data
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                if time.monotonic() - start < 0.3:
+                    continue
+                if self_addr[0] is None:
+                    self_addr[0] = get_self_address()
+                    if self_addr[0] is None:
+                        continue
+                ev, _, rest = line.decode(errors="ignore").partition(">>")
+                addr = rest.split(",")[0] if rest else ""
+                self_a = self_addr[0] or ""
+                close = False
+                if ev == "activewindowv2" and addr and addr != self_a:
+                    close = True
+                elif ev == "openwindow" and addr != self_a:
+                    close = True
+                elif ev == "openlayer":
+                    close = True
+                if close:
+                    GLib.idle_add(finish)
+                    return
+    except Exception:
+        pass
+    finally:
+        try:
+            s.close()
+        except OSError:
+            pass
+
+
+def on_focus_out(_window, _event) -> bool:
+    finish()
+    return False
+
+
+def finish() -> None:
+    Gtk.main_quit()
+
+
+def hypr_dispatch(*args) -> None:
+    subprocess.run(["hyprctl", "dispatch", *args], capture_output=True)
+
+
+def hypr_cursor_pos():
+    try:
+        out = subprocess.run(
+            ["hyprctl", "cursorpos"], capture_output=True, text=True,
+        ).stdout.strip()
+        x, y = map(int, out.split(","))
+        return x, y
+    except (ValueError, OSError):
+        return 0, 0
+
+
+def monitor_geometry_at(x: int, y: int):
+    try:
+        out = subprocess.run(
+            ["hyprctl", "-j", "monitors"], capture_output=True, text=True,
+        ).stdout
+        mons = json.loads(out or "[]")
+    except Exception:
+        return (0, 0, 0, 0)
+    for m in mons:
+        mx, my, mw, mh = m["x"], m["y"], m["width"], m["height"]
+        if mx <= x < mx + mw and my <= y < my + mh:
+            return mx, my, mw, mh
+    if mons:
+        m = mons[0]
+        return m["x"], m["y"], m["width"], m["height"]
+    return 0, 0, 0, 0
+
+
+def compute_target():
+    x, y = hypr_cursor_pos()
+    wx = win.get_allocated_width() or WIDTH
+    mx, my, mw, mh = monitor_geometry_at(x, y)
+    px = max(mx + 4, min(x - wx // 2, mx + mw - wx - 4))
+    py = my + TOP_BAR_MARGIN + TOP_BAR_HEIGHT + POPUP_GAP
+    return px, py
+
+
+def move_to_target(px, py, attempts) -> bool:
+    pid = os.getpid()
+    try:
+        out = subprocess.run(
+            ["hyprctl", "-j", "clients"], capture_output=True, text=True,
+        ).stdout
+        clients = json.loads(out or "[]")
+    except Exception:
+        clients = []
+    if any(c.get("pid") == pid for c in clients):
+        hypr_dispatch("hl.dsp.window.move", f"{{ x = {px}, y = {py} }}")
+        return False
+    attempts[0] -= 1
+    return attempts[0] > 0
+
+
+def place() -> None:
+    screen = win.get_screen()
+    rgba = screen.get_rgba_visual()
+    if rgba is not None:
+        win.set_visual(rgba)
+    win.set_app_paintable(True)
+    win.realize()
+    win.show_all()
+    px, py = compute_target()
+    win.move(px, py)
+    GLib.timeout_add(60, lambda: move_to_target(px, py, [12]))
+
+
+win.connect("key-press-event", on_key)
+win.connect("focus-out-event", on_focus_out)
+
+
+def main() -> None:
+    global orig_follow_mouse
+    old_pid, stored_orig = read_lock()
+    if old_pid and old_pid not in (0, os.getpid()):
+        try:
+            os.kill(old_pid, 9)
+        except (OSError, ValueError):
+            pass
+    if old_pid and stored_orig is not None:
+        orig_follow_mouse[0] = stored_orig
+    else:
+        orig_follow_mouse[0] = get_follow_mouse()
+    set_follow_mouse(2)
+    try:
+        with open(LOCK, "w") as fh:
+            fh.write(f"{os.getpid()}:{orig_follow_mouse[0]}")
+    except OSError:
+        pass
+
+    place()
+    threading.Thread(target=watch_hypr_events, daemon=True).start()
+
+    try:
+        Gtk.main()
+    except KeyboardInterrupt:
+        sys.exit(0)
+    finally:
+        restore_follow_mouse()
+
+
+if __name__ == "__main__":
+    main()

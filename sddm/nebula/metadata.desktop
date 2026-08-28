@@ -1,0 +1,13 @@
+[SddmGreeterTheme]
+Name=Nebula
+Description=Purple glass greeter matching the Hyprland desktop theme
+Author=jairo
+License=MIT
+Type=sddm-theme
+Version=1.0
+Website=
+Screenshot=
+MainScript=Main.qml
+ConfigFile=theme.conf
+TranslationsDirectory=
+QtVersion=6

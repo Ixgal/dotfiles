@@ -1,5 +1,6 @@
 // =============================================================
 // DOCK INFERIOR — mismo estilo que la barra superior.
+// Lanzadores: doble clic = abrir/cerrar la aplicación.
 // Wlr/taskbar: clic izquierdo = minimize-raise (minimiza la app
 // activa / restaura la minimizada). Clic central = cerrar.
 // Clic derecho = traer al frente.
@@ -39,43 +40,43 @@
     "custom/firefox": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh firefox firefox"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh firefox firefox"
     },
 
     "custom/discord": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh discord discord"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh discord discord"
     },
 
     "custom/spotify": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.spotify.Client Spotify' flatpak run com.spotify.Client"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.spotify.Client Spotify' flatpak run com.spotify.Client"
     },
 
     "custom/brave": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.brave.Browser Brave-browser Brave' flatpak run com.brave.Browser"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh 'com.brave.Browser Brave-browser Brave' flatpak run com.brave.Browser"
     },
 
     "custom/nautilus": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh 'org.gnome.Nautilus' nautilus"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh 'org.gnome.Nautilus' nautilus"
     },
 
     "custom/kitty": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh kitty kitty"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh kitty kitty"
     },
 
     "custom/steam": {
         "format": "",
         "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/launcher-toggle.sh steam steam"
+        "on-double-click": "/home/jairo/.local/bin/launcher-toggle.sh steam steam"
     },
 
     // ============= BARRA DE TAREAS (ventanas abiertas) =============

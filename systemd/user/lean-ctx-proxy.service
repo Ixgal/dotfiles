@@ -1,0 +1,17 @@
+[Unit]
+Description=lean-ctx API Proxy
+After=network.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/home/jairo/.npm-global/lib/node_modules/lean-ctx-bin/bin/lean-ctx proxy start --port=4444
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target

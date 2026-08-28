@@ -1,22 +1,16 @@
-/* Mismo cristal que kitty: velo morado claro casi transparente.
-   Sin blur del compositor no hay fondo que oscurezca el wallpaper,
-   asi que la legibilidad la sostiene el text-shadow, no el fondo. */
 * {
     font-family: "Symbols Nerd Font", "Noto Sans", sans-serif;
     font-size: 13px;
     border: none;
     border-radius: 0;
     min-height: 0;
-    text-shadow: 0 1px 3px rgba(12, 6, 28, 0.95);
 }
 
-/* La barra en si es invisible: solo se ven las cajitas de los modulos,
-   asi no queda una tira de cristal atravesando huecos vacios
-   (a los lados del reloj, entre grupos). */
 window#waybar {
-    background: transparent;
-    border: none;
-    color: #ffffff;
+    background: linear-gradient(180deg, rgba(42, 28, 78, 0.70), rgba(20, 12, 42, 0.55));
+    border: 1px solid rgba(192, 132, 252, 0.25);
+    border-radius: 14px;
+    color: #ede9fe;
 }
 
 window#waybar.hidden {
@@ -24,14 +18,14 @@ window#waybar.hidden {
 }
 
 tooltip {
-    background: rgba(46, 32, 82, 0.97);
+    background: rgba(28, 17, 56, 0.92);
     border: 1px solid rgba(192, 132, 252, 0.30);
     border-radius: 10px;
-    color: #ffffff;
+    color: #ede9fe;
 }
 
 tooltip label {
-    color: #ffffff;
+    color: #ede9fe;
 }
 
 .modules-left, .modules-right {
@@ -42,34 +36,31 @@ button, .module {
     border-radius: 9px;
     padding: 0 7px;
     margin: 2px 1px;
-    background-color: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background-color: rgba(255, 255, 255, 0.04);
     transition: background-color 0.2s ease, color 0.2s ease,
                 box-shadow 0.2s ease;
 }
 
 button:hover {
-    background-color: rgba(216, 180, 254, 0.24);
+    background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* ---- Workspaces (navegación) ---- */
 #workspaces {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 9px;
     padding: 0 3px;
 }
 
 #workspaces button {
     background: transparent;
-    border: none;
     padding: 0 6px;
-    color: #cfc4ea;
+    color: #8b84a8;
 }
 
 #workspaces button:hover {
     background: rgba(192, 132, 252, 0.12);
-    color: #ffffff;
+    color: #ddd3f5;
 }
 
 #workspaces button.active,
@@ -88,7 +79,7 @@ button:hover {
 /* ---- Red ---- */
 #custom-network.connected {
     background-color: rgba(139, 92, 246, 0.20);
-    color: #e4d9ff;
+    color: #c4b5fd;
 }
 
 #custom-network.connected:hover {
@@ -104,12 +95,12 @@ button:hover {
 /* ---- Monitor ---- */
 #custom-monitor {
     background-color: rgba(139, 92, 246, 0.18);
-    color: #ddc9ff;
+    color: #a78bfa;
 }
 
 #custom-monitor:hover {
     background-color: rgba(139, 92, 246, 0.36);
-    color: #e4d9ff;
+    color: #c4b5fd;
 }
 
 /* ---- Audio ---- */
@@ -126,7 +117,7 @@ button:hover {
 /* ---- Spotify ---- */
 #custom-media {
     background-color: rgba(139, 92, 246, 0.20);
-    color: #e4d9ff;
+    color: #c4b5fd;
     font-weight: 600;
 }
 
@@ -134,7 +125,7 @@ button:hover {
 
 #custom-media.paused {
     background-color: rgba(139, 92, 246, 0.12);
-    color: #cfc4ea;
+    color: #8b84a8;
 }
 
 #custom-media:hover {
@@ -144,16 +135,14 @@ button:hover {
 
 /* ---- Sistema (grupo colapsable) ---- */
 #system {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 9px;
     margin: 2px 1px;
 }
 
 #system #custom-system {
     background: transparent;
-    border: none;
-    color: #e3ccff;
+    color: #c084fc;
     padding: 0 8px;
 }
 
@@ -166,20 +155,18 @@ button:hover {
 #system #disk,
 #system #temperature {
     background: rgba(192, 132, 252, 0.10);
-    border: none;
-    color: #e4d9ff;
+    color: #c4b5fd;
 }
 
 #system .system-child {
     background: rgba(192, 132, 252, 0.10);
-    border: none;
-    color: #e4d9ff;
+    color: #c4b5fd;
 }
 
 /* ---- Brillo ---- */
 #backlight {
     background-color: rgba(148, 87, 240, 0.18);
-    color: #dcc4ff;
+    color: #b78af7;
 }
 
 /* ---- Batería ---- */
@@ -213,8 +200,7 @@ button:hover {
 
 /* ---- Bandeja ---- */
 #tray {
-    background-color: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background-color: rgba(255, 255, 255, 0.04);
     border-radius: 9px;
     padding: 0 6px;
 }
@@ -240,47 +226,4 @@ button:hover {
     background-color: #ef4444;
     color: #ffffff;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
-}
-/* ---- Cluster derecho: una sola caja que une los iconos ----
-   Los modulos de la derecha se agrupan visualmente en un unico
-   contenedor con el mismo cristal y contorno que el grupo #system.
-   Sus hijos pierden borde propio: si no, quedarian cajitas anidadas
-   dentro de la caja grande. */
-.modules-right {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
-    border-radius: 11px;
-    padding: 0 3px;
-    margin: 2px 3px;
-}
-
-.modules-right .module,
-.modules-right button,
-.modules-right #system,
-.modules-right #tray {
-    background: transparent;
-    border: none;
-    margin: 2px 0;
-}
-
-/* Separadores tenues entre iconos, en vez de un borde por icono */
-.modules-right .module:not(:first-child) {
-    border-left: 1px solid rgba(109, 58, 192, 0.30);
-    border-radius: 0;
-}
-
-/* El boton de apagado conserva su acento rojo dentro de la caja */
-.modules-right #custom-power {
-    background-color: rgba(239, 68, 68, 0.22);
-    border-radius: 9px;
-    margin: 2px 1px;
-}
-
-.modules-right #custom-power:hover {
-    background-color: #ef4444;
-}
-
-.modules-right button:hover,
-.modules-right .module:hover {
-    background-color: rgba(216, 180, 254, 0.22);
 }

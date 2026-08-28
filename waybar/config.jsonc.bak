@@ -22,12 +22,11 @@
         "bluetooth",
         "custom/monitor",
         "pulseaudio",
-        "custom/system",
+        "group/system",
         "backlight",
         "battery",
         "tray",
         "custom/media",
-        "custom/wallpaper",
         "custom/power"
     ],
 
@@ -51,28 +50,39 @@
         }
     },
 
-    // Estadisticas del sistema: panel desplegable hacia abajo, con
-    // CPU por nucleo, RAM, swap, disco, sensores y red en tiempo real.
+    // Estadísticas del sistema: colapsadas por defecto, clic para mostrar.
+    "group/system": {
+        "orientation": "horizontal",
+        "drawer": {
+            "transition-duration": 350,
+            "children-class": "system-child",
+            "click-to-reveal": true,
+            "transition-left-to-right": false
+        },
+        "modules": [
+            "custom/system",
+            "cpu",
+            "memory",
+            "disk",
+            "temperature"
+        ]
+    },
+
     "custom/system": {
         "format": "\uf0e4",
-        "tooltip": true,
-        "tooltip-format": "Estadísticas del sistema (clic para abrir)",
-        "on-click": "$HOME/.config/waybar/system_popup.py"
+        "tooltip": "Estadísticas del sistema (clic para mostrar/ocultar)"
     },
 
     "pulseaudio": {
         "format": "{volume}% {icon}",
-        "format-muted": "{icon}",
+        "format-muted": "\uf6a9 {icon}",
         "tooltip": false,
         "format-icons": {
             "default": [
-                "󰕿",
-                "󰖀",
-                "󰕾"
-            ],
-            "muted": "󰝟",
-            "headphone": "󰋋",
-            "headset": "󰋎"
+                "\uf027",
+                "\uf028",
+                "\uf029"
+            ]
         },
         "on-click": "$HOME/.config/waybar/volume_popup.py",
         "on-scroll-up": "pactl set-sink-volume @DEFAULT_SINK@ +5%",
@@ -90,17 +100,16 @@
 
     "bluetooth": {
         "format": " {icon}",
-        "format-disabled": " 󰂲",
-        "format-off": " 󰂲",
+        "format-disabled": " 󰂳",
+        "format-off": " 󰂯",
         "format-on": " 󰂯",
-        "format-connected": " 󰂱",
-        "format-no-controller": " 󰂳",
+        "format-connected": " 󰂯",
+        "format-no-controller": " 󰂲",
         "format-icons": {
             "default": [
+                "󰂯",
+                "󰂯",
                 "󰂯"
-            ],
-            "connected": [
-                "󰂱"
             ]
         },
         "tooltip-format": "Bluetooth",
@@ -108,16 +117,9 @@
     },
 
     "custom/monitor": {
-        "format": "󰍹",
+        "format": "\uf233",
         "tooltip": false,
         "on-click": "$HOME/.config/waybar/monitor_popup.py"
-    },
-
-    // Selector de fondos (mismo menu que SUPER+X): clic abre, clic cierra
-    "custom/wallpaper": {
-        "format": " \uf02c8 ",
-        "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/toggle_wallpaper_menu.sh"
     },
 
     "cpu": {
@@ -141,9 +143,7 @@
         "format-icons": [
             "\uf2cb",
             "\uf2ca",
-            "\uf2c9",
-            "\uf2c8",
-            "\uf2c7"
+            "\uf2c9"
         ]
     },
 
@@ -151,9 +151,9 @@
         "device": "amdgpu_bl1",
         "format": "{icon} {percent}%",
         "format-icons": [
-            "󰃞",
-            "󰃟",
-            "󰃠"
+            "\uf339",
+            "\uf33a",
+            "\uf33b"
         ],
         "tooltip": false,
         "on-click": "$HOME/.config/waybar/brightness_popup.py"
@@ -210,6 +210,6 @@
     "custom/power": {
         "format": " \uf011 ",
         "tooltip": false,
-        "on-click": "$HOME/.config/waybar/power_popup.py"
+        "on-click": "$HOME/.config/waybar/powermenu.sh"
     }
 }

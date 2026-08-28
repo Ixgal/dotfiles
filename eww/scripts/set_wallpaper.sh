@@ -1,78 +1,95 @@
 #!/bin/bash
-# Aplica un fondo de pantalla.
-# Uso:
-#   set_wallpaper.sh static /ruta/a/imagen.png
-#   set_wallpaper.sh anim /ruta/a/video.mp4
-#   set_wallpaper.sh we ID_de_workshop
+# Aplica un fondo de pantalla con un clic.
+# Uso: set_wallpaper.sh static /ruta/a/imagen.png
 set -u
 
 STATE_FILE="$HOME/.config/eww/current_wallpaper"
-MPVPAPER="$HOME/.local/bin/mpvpaper"
+HYPRPAPER_CONF="$HOME/.config/hypr/hyprpaper.conf"
+WALLPAPER_DIR="$HOME/Pictures/Wallpapers"
 
-stop_we() {
-    pkill -f "linux-wallpaperengine" >/dev/null 2>&1
+write_hyprpaper_conf() {
+    local path="$1"
+    cat > "$HYPRPAPER_CONF" <<EOF
+wallpaper {
+    monitor = DP-1
+    path = $path
+    fit_mode = cover
+}
+wallpaper {
+    monitor = DP-2
+    path = $path
+    fit_mode = cover
+}
+EOF
 }
 
-stop_mpvpaper() {
-    pkill -x mpvpaper >/dev/null 2>&1
+restart_hyprpaper() {
+    pkill hyprpaper 2>/dev/null
+    sleep 0.5
+    hyprpaper >/dev/null 2>&1 &
+    disown
+    sleep 2
 }
 
 apply_static() {
     local path="$1"
-    stop_we
-    stop_mpvpaper
-    sleep 0.2
-    if command -v hyprctl >/dev/null 2>&1; then
-        if ! pgrep -x hyprpaper >/dev/null 2>&1; then
-            hyprpaper >/dev/null 2>&1 &
-        fi
-        local i=0
-        while [ "$i" -lt 30 ]; do
-            if hyprctl hyprpaper wallpaper ",$path" >/dev/null 2>&1; then
-                break
-            fi
-            sleep 0.2
-            i=$((i+1))
-        done
-        hyprctl hyprpaper preload "$path" >/dev/null 2>&1
-    elif command -v swaybg >/dev/null 2>&1; then
-        pkill swaybg >/dev/null 2>&1
-        swaybg -i "$path" -m fill >/dev/null 2>&1 &
-    fi
+    # Kill any other wallpaper renderers
+    pkill -f "[l]inux-wallpaperengine" 2>/dev/null
+    pkill -x mpvpaper 2>/dev/null
+
+    # Write hyprpaper config and restart
+    write_hyprpaper_conf "$path"
+    restart_hyprpaper
+
+    # Save state
     echo "static:$path" > "$STATE_FILE"
+
+    # Visual feedback
+    notify-send -i image -t 2000 "Fondo de pantalla" "$(basename "$path")" 2>/dev/null
 }
 
 apply_anim() {
     local path="$1"
-    stop_we
-    pkill -x mpvpaper >/dev/null 2>&1
+    pkill -f "[l]inux-wallpaperengine" 2>/dev/null
+    pkill -x hyprpaper 2>/dev/null
     sleep 0.3
-    if [ ! -x "$MPVPAPER" ]; then
-        echo "mpvpaper no disponible" >&2
-        return 1
-    fi
-    nohup "$MPVPAPER" -o "loop=inf no-audio" eDP-1 "$path" >/dev/null 2>&1 &
+    nohup mpvpaper -o "loop=inf no-audio" -f "$path" >/dev/null 2>&1 &
     sleep 1
-    if pgrep -x mpvpaper >/dev/null 2>&1; then
-        # mpvpaper y hyprpaper no pueden coexistir: solo ahora matamos hyprpaper
-        pkill -x hyprpaper >/dev/null 2>&1
-        echo "anim:$path" > "$STATE_FILE"
-    else
-        echo "mpvpaper no arrancó; manteniendo el fondo estático" >&2
-    fi
+    echo "anim:$path" > "$STATE_FILE"
+    notify-send -i image -t 2000 "Fondo animado" "$(basename "$path")" 2>/dev/null
+}
+
+get_monitors() {
+    hyprctl monitors 2>/dev/null | awk '/^Monitor/ {print $2}'
 }
 
 apply_we() {
-    local id="$1"
-    stop_we
+    local path="$1"
+    local prev_mode="" prev_path=""
+    local -a args=()
+    local mon
+    while IFS= read -r mon; do
+        [ -n "$mon" ] && args+=(--screen-root "$mon")
+    done < <(get_monitors)
+    if [ -f "$STATE_FILE" ]; then
+        IFS=':' read -r prev_mode prev_path < "$STATE_FILE" || true
+    fi
+    pkill -f "[l]inux-wallpaperengine" 2>/dev/null
+    pkill -x hyprpaper 2>/dev/null
+    pkill -x mpvpaper 2>/dev/null
     sleep 0.3
-    nohup linux-wallpaperengine "$id" >/dev/null 2>&1 &
-    sleep 1
-    if pgrep -f linux-wallpaperengine >/dev/null 2>&1; then
-        pkill -x hyprpaper >/dev/null 2>&1
-        echo "we:$id" > "$STATE_FILE"
+    nohup linux-wallpaperengine --silent --fps 30 "${args[@]}" "$path" >/dev/null 2>&1 &
+    local pid=$!
+    disown
+    sleep 5
+    if kill -0 "$pid" 2>/dev/null; then
+        echo "we:$path" > "$STATE_FILE"
+        notify-send -i image -t 2000 "Fondo Wallpaper Engine" "$(basename "$path")" 2>/dev/null
     else
-        echo "linux-wallpaperengine no arrancó; manteniendo el fondo estático" >&2
+        notify-send -i dialog-error -t 3000 "Wallpaper Engine" "No se pudo iniciar: $(basename "$path")" 2>/dev/null
+        if [ -n "$prev_mode" ] && [ -n "$prev_path" ]; then
+            "$0" "$prev_mode" "$prev_path"
+        fi
     fi
 }
 
@@ -80,8 +97,5 @@ case "${1:-}" in
     static) apply_static "${2:-}" ;;
     anim)   apply_anim "${2:-}" ;;
     we)     apply_we "${2:-}" ;;
-    *)
-        echo "uso: set_wallpaper.sh {static PATH | anim PATH | we ID}" >&2
-        exit 1
-        ;;
+    *)      echo "uso: set_wallpaper.sh {static PATH | anim PATH | we PATH}" >&2; exit 1 ;;
 esac

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -13,147 +14,128 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 from gi.repository import Gdk, GLib, Gtk  # noqa: E402
 
-BAR_HEIGHT = 28
-WIDTH = 220
-PADDING = 4
+WIDTH = 280
 TOP_BAR_MARGIN = 6
 TOP_BAR_HEIGHT = 34
 POPUP_GAP = 4
+HYPRLUA = os.path.expanduser("~/.config/hypr/hyprland.lua")
+
+LOCK = "/tmp/.monitor_popup.pid"
+orig_follow_mouse = [1]
 
 
-def get_vol() -> int:
-    out = subprocess.run(
-        ["pactl", "get-sink-volume", "@DEFAULT_SINK@"],
-        capture_output=True, text=True,
-    ).stdout
-    for field in out.split():
-        if field.endswith("%"):
-            return int(field.rstrip("%"))
-    return 50
-
-
-def apply_vol(v: int) -> None:
-    subprocess.Popen(
-        ["pactl", "set-sink-volume", "@DEFAULT_SINK@", f"{v}%"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-
-
-def get_default_sink() -> str:
-    out = subprocess.run(
-        ["pactl", "get-default-sink"], capture_output=True, text=True,
-    ).stdout.strip()
-    if out:
-        return out
-    for s in get_sinks():
-        if s["state"] == "RUNNING":
-            return s["name"]
-    sinks = get_sinks()
-    return sinks[0]["name"] if sinks else ""
-
-
-def get_sinks() -> list:
-    sinks = []
+def get_monitors():
     try:
         out = subprocess.run(
-            ["pactl", "-f", "json", "list", "sinks"],
-            capture_output=True, text=True,
+            ["hyprctl", "-j", "monitors"], capture_output=True, text=True,
         ).stdout
-        for s in json.loads(out or "[]"):
-            props = s.get("properties") or {}
-            vol = 50
-            try:
-                vol = int(
-                    s["volume"]["front-left"]["value_percent"].rstrip("%")
-                )
-            except (KeyError, ValueError, TypeError):
-                pass
-            sinks.append({
-                "name": s.get("name", ""),
-                "desc": props.get("device.description")
-                        or props.get("node.nick")
-                        or s.get("name", ""),
-                "state": s.get("state", ""),
-                "vol": vol,
-            })
+        return json.loads(out or "[]")
     except Exception:
-        pass
-    return sinks
+        return []
 
 
-def sink_icon(s) -> str:
-    hay = f"{s['name']} {s['desc']}".lower()
-    if "hdmi" in hay or "displayport" in hay:
-        return "\uf10d"
-    if any(k in hay for k in (
-            "bluez", "headset", "headphone", "auricular", "hyperx",
-            "bluetooth", "battery_case", "wh-1000", "wf-1000")):
-        return "\uf59f"
-    return "\uf028"
+def get_active_monitor():
+    monitors = get_monitors()
+    for m in monitors:
+        if m.get("focused"):
+            return m
+    return monitors[0] if monitors else None
 
 
-def switch_sink(name: str, desc: str) -> None:
+def parse_mode(mode_str):
+    parts = mode_str.split("@")
+    if len(parts) == 2:
+        res = parts[0]
+        hz = parts[1].replace("Hz", "")
+        return res, float(hz)
+    return mode_str, 0.0
+
+
+def apply_and_save(monitor_name, mode_str):
     subprocess.run(
-        ["pactl", "set-default-sink", name],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        ["hyprctl", "eval",
+         f'hl.monitor({{output = "{monitor_name}", mode = "{mode_str}", '
+         f'position = "auto", scale = "auto"}})'],
+        capture_output=True, text=True,
     )
+    save_to_config(monitor_name, mode_str)
+
+
+def save_to_config(monitor_name, mode_str):
     try:
-        out = subprocess.run(
-            ["pactl", "-f", "json", "list", "sink-inputs"],
-            capture_output=True, text=True,
-        ).stdout
-        for inp in json.loads(out or "[]"):
-            subprocess.run(
-                ["pactl", "move-sink-input", str(inp.get("index")), name],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-            )
-    except Exception:
-        pass
-    subprocess.Popen(
-        ["notify-send", "-i", "audio-card", "Salida de audio",
-         f"Ahora sonando en: {desc}"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        with open(HYPRLUA, "r") as f:
+            content = f.read()
+    except OSError:
+        return
+
+    new_block = (
+        f'hl.monitor({{\n'
+        f'    output   = "{monitor_name}",\n'
+        f'    mode     = "{mode_str}",\n'
+        f'    position = "auto",\n'
+        f'    scale    = "auto",\n'
+        f'}})\n'
     )
 
+    monitors_hdr = "---- MONITORS ----"
+    programs_hdr = "---- MY PROGRAMS ----"
+    i = content.find(monitors_hdr)
+    j = content.find(programs_hdr)
 
-win = Gtk.Window()
-win.set_decorated(False)
-win.set_resizable(False)
-win.set_skip_taskbar_hint(True)
-win.set_skip_pager_hint(True)
-win.set_keep_above(True)
-win.set_default_size(WIDTH, 90)
+    if i >= 0 and j > i:
+        before = content[:i]
+        after_programs = content[j:]
 
+        # Extract the comment lines between header and first hl.monitor
+        section = content[i:j]
+        comment_lines = []
+        for line in section.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("--") or stripped == "" or stripped.startswith("----"):
+                comment_lines.append(line)
+            else:
+                break
+        comment_text = "\n".join(comment_lines).rstrip("\n")
+
+        content = (
+            before
+            + comment_text
+            + "\n\n"
+            + new_block
+            + "\n"
+            + after_programs
+        )
+        with open(HYPRLUA, "w") as f:
+            f.write(content)
+        return
+
+    # Fallback
+    import re as _re
+    pattern = r'hl\.monitor\(\{[^}]*\}\)'
+    content = _re.sub(pattern, new_block.strip(), content, count=1)
+    with open(HYPRLUA, "w") as f:
+        f.write(content)
+
+
+# ── CSS ──
 css = b"""
 window {
-    background: linear-gradient(180deg, rgba(42, 28, 78, 0.82), rgba(20, 12, 42, 0.64));
+    background: linear-gradient(180deg, rgba(42, 28, 78, 0.88), rgba(20, 12, 42, 0.72));
     border: 1px solid rgba(192, 132, 252, 0.35);
     border-radius: 10px;
 }
-scale { min-height: 14px; padding: 0 10px; }
-scale trough {
-    background-color: rgba(192, 132, 252, 0.18);
-    border-radius: 999px;
-    min-height: 5px;
-    margin: 0 4px;
+label.title {
+    color: #c4b5fd;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 6px 10px 2px 10px;
 }
-scale highlight {
-    background: linear-gradient(90deg, #8b5cf6, #c084fc);
-    border-radius: 999px;
-    min-height: 5px;
+label.monitor-name {
+    color: #a78bfa;
+    font-size: 10px;
+    padding: 0 10px 6px 10px;
 }
-scale slider {
-    background-color: #d9b8ff;
-    border: none;
-    border-radius: 999px;
-    min-height: 12px;
-    min-width: 12px;
-    margin: -3px 0 0 0;
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.70);
-}
-label { color: #ede9fe; font-size: 11px; font-weight: bold; padding-right: 10px; }
-label.title { padding: 6px 10px 2px 10px; }
-button.sink-btn {
+button.mode-btn {
     background: rgba(139, 92, 246, 0.12);
     color: #c4b5fd;
     border: 1px solid rgba(192, 132, 252, 0.15);
@@ -162,17 +144,48 @@ button.sink-btn {
     font-size: 10px;
     min-height: 18px;
 }
-button.sink-btn:hover {
+button.mode-btn:hover {
     background: rgba(139, 92, 246, 0.30);
     color: #ede9fe;
 }
-button.sink-btn.current {
+button.mode-btn.selected {
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.90), rgba(192, 132, 252, 0.65));
     color: #ffffff;
     border-color: rgba(192, 132, 252, 0.50);
     box-shadow: 0 0 8px rgba(139, 92, 246, 0.45);
 }
+button.mode-btn.current {
+    background: rgba(34, 197, 94, 0.20);
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.30);
+}
+button.apply-btn {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.95), rgba(168, 85, 247, 0.85));
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 0;
+    font-size: 11px;
+    font-weight: bold;
+    min-height: 20px;
+    margin: 4px 10px 8px 10px;
+}
+button.apply-btn:hover {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 1.0), rgba(192, 132, 252, 0.85));
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.60);
+}
+button.apply-btn:disabled {
+    background: rgba(139, 92, 246, 0.20);
+    color: #6b5b8a;
+}
 scrollwin { background: transparent; }
+scrollbar { background: transparent; }
+scrollbar slider {
+    background: rgba(192, 132, 252, 0.30);
+    border-radius: 999px;
+    min-height: 20px;
+    min-width: 4px;
+}
 """
 provider = Gtk.CssProvider()
 provider.load_from_data(css)
@@ -188,104 +201,120 @@ import popup_theme  # noqa: E402
 
 popup_theme.install()
 
+# ── Window ──
+win = Gtk.Window()
+win.set_decorated(False)
+win.set_resizable(False)
+win.set_skip_taskbar_hint(True)
+win.set_skip_pager_hint(True)
+win.set_keep_above(True)
+win.set_default_size(WIDTH, 10)
+
 vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
 win.add(vbox)
 
-slider_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
-vbox.pack_start(slider_row, False, False, 2)
+monitor = get_active_monitor()
+selected_mode = [None]
+current_mode_str = f"{monitor['width']}x{monitor['height']}@{monitor['refreshRate']:.2f}Hz" if monitor else ""
 
-scale = Gtk.Scale(
-    orientation=Gtk.Orientation.HORIZONTAL,
-    adjustment=Gtk.Adjustment(value=get_vol(), lower=0, upper=100, step_increment=2, page_increment=10, page_size=0),
-)
-scale.set_draw_value(False)
-scale.set_size_request(150, -1)
-slider_row.pack_start(scale, True, True, 0)
+if not monitor:
+    lbl = Gtk.Label(label="No hay monitor conectado")
+    lbl.get_style_context().add_class("title")
+    vbox.pack_start(lbl, False, False, 8)
+else:
+    title_lbl = Gtk.Label(label="Configurar Monitor")
+    title_lbl.get_style_context().add_class("title")
+    title_lbl.set_xalign(0)
+    vbox.pack_start(title_lbl, False, False, 0)
 
-label = Gtk.Label(label=f"{scale.get_value():.0f}")
-slider_row.pack_start(label, False, False, 0)
+    name_lbl = Gtk.Label(label=f"{monitor['name']}  —  {monitor['description']}")
+    name_lbl.get_style_context().add_class("monitor-name")
+    name_lbl.set_xalign(0)
+    vbox.pack_start(name_lbl, False, False, 0)
 
-title = Gtk.Label(label="Salida de audio")
-title.get_style_context().add_class("title")
-title.set_xalign(0)
-vbox.pack_start(title, False, False, 0)
+    available = monitor.get("availableModes", [])
+    seen = set()
+    unique_modes = []
+    for m in available:
+        res, hz = parse_mode(m)
+        key = (res, round(hz))
+        if key not in seen:
+            seen.add(key)
+            unique_modes.append((res, hz, m))
 
-scroll = Gtk.ScrolledWindow()
-scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-scroll.set_min_content_height(min(len(get_sinks()) * 28 + 8, 140))
-scroll.set_max_content_height(200)
-scroll.get_style_context().add_class("scrollwin")
-vbox.pack_start(scroll, True, True, 0)
+    def sort_key(item):
+        res, hz, _ = item
+        w, h = 0, 0
+        if "x" in res:
+            p = res.split("x")
+            try:
+                w, h = int(p[0]), int(p[1])
+            except ValueError:
+                pass
+        return (-w * h, -hz)
 
-sink_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-sink_box.set_margin_start(6)
-sink_box.set_margin_end(6)
-sink_box.set_margin_top(2)
-sink_box.set_margin_bottom(6)
-scroll.add(sink_box)
+    unique_modes.sort(key=sort_key)
 
-sink_btns = []
+    scroll = Gtk.ScrolledWindow()
+    scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    scroll.set_min_content_height(min(len(unique_modes) * 26 + 8, 180))
+    scroll.set_max_content_height(200)
+    scroll.get_style_context().add_class("scrollwin")
+    vbox.pack_start(scroll, True, True, 0)
 
-timer_id = [0]
+    mode_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+    mode_box.set_margin_start(6)
+    mode_box.set_margin_end(6)
+    mode_box.set_margin_top(4)
+    mode_box.set_margin_bottom(2)
+    scroll.add(mode_box)
 
+    current_res = f"{monitor['width']}x{monitor['height']}"
+    current_hz = round(monitor["refreshRate"])
 
-def on_change(_scale) -> None:
-    label.set_text(f"{scale.get_value():.0f}")
-    if timer_id[0]:
-        GLib.source_remove(timer_id[0])
-    timer_id[0] = GLib.timeout_add(40, do_apply)
+    apply_btn = Gtk.Button(label="Aplicar")
+    apply_btn.get_style_context().add_class("apply-btn")
+    apply_btn.set_sensitive(False)
+    vbox.pack_start(apply_btn, False, False, 0)
 
+    all_mode_btns = []
 
-def do_apply() -> bool:
-    timer_id[0] = 0
-    apply_vol(int(round(scale.get_value())))
-    return False
+    def on_apply(_btn):
+        if selected_mode[0]:
+            apply_and_save(monitor["name"], selected_mode[0])
+            Gtk.main_quit()
 
+    apply_btn.connect("clicked", on_apply)
 
-def mark_current() -> None:
-    default = get_default_sink()
-    for b in sink_btns:
-        if b.sink_name == default:
-            b.get_style_context().add_class("current")
-        else:
-            b.get_style_context().remove_class("current")
+    def make_select_handler(m, btn_ref):
+        def handler(_b):
+            selected_mode[0] = m
+            apply_btn.set_sensitive(True)
+            for b in all_mode_btns:
+                b.get_style_context().remove_class("selected")
+            btn_ref.get_style_context().add_class("selected")
+        return handler
 
+    for res, hz, raw in unique_modes:
+        btn = Gtk.Button(label=f"{res}  @  {hz:.0f} Hz")
+        btn.get_style_context().add_class("mode-btn")
 
-def make_sink_handler(sink, btn) -> None:
-    def handler(_b):
-        switch_sink(sink["name"], sink["desc"])
-        mark_current()
-        try:
-            scale.handler_block_by_func(on_change)
-            scale.set_value(sink["vol"])
-        finally:
-            scale.handler_unblock_by_func(on_change)
-        label.set_text(f"{sink['vol']:.0f}")
-        btn.grab_focus()
-    return handler
+        is_current = res == current_res and round(hz) == current_hz
+        if is_current:
+            btn.get_style_context().add_class("current")
+            btn.set_label(f"{res}  @  {hz:.0f} Hz  ●")
 
-
-for sink in get_sinks():
-    btn = Gtk.Button(label=f"{sink_icon(sink)}  {sink['desc']}")
-    btn.get_style_context().add_class("sink-btn")
-    btn.sink_name = sink["name"]
-    btn.connect("clicked", make_sink_handler(sink, btn))
-    sink_btns.append(btn)
-    sink_box.pack_start(btn, False, False, 0)
-
-mark_current()
+        btn.connect("clicked", make_select_handler(raw, btn))
+        all_mode_btns.append(btn)
+        mode_box.pack_start(btn, False, False, 0)
 
 
+# ── Hyprland event handling ──
 def on_key(_widget, event) -> bool:
-    if event.keyval in (Gdk.KEY_Escape, Gdk.KEY_Return):
-        finish()
+    if event.keyval == Gdk.KEY_Escape:
+        Gtk.main_quit()
         return True
     return False
-
-
-def finish() -> None:
-    do_apply()
-    Gtk.main_quit()
 
 
 def get_self_address():
@@ -300,10 +329,6 @@ def get_self_address():
     except Exception:
         pass
     return None
-
-
-LOCK = "/tmp/.volume_popup.pid"
-orig_follow_mouse = [1]
 
 
 def get_follow_mouse() -> int:
@@ -415,14 +440,23 @@ def on_focus_out(_window, _event) -> bool:
     return False
 
 
-scale.connect("value-changed", on_change)
-scale.connect("key-press-event", on_key)
-win.connect("key-press-event", on_key)
-win.connect("focus-out-event", on_focus_out)
+def finish() -> None:
+    Gtk.main_quit()
 
 
 def hypr_dispatch(*args) -> None:
     subprocess.run(["hyprctl", "dispatch", *args], capture_output=True)
+
+
+def hypr_cursor_pos():
+    try:
+        out = subprocess.run(
+            ["hyprctl", "cursorpos"], capture_output=True, text=True,
+        ).stdout.strip()
+        x, y = map(int, out.split(","))
+        return x, y
+    except (ValueError, OSError):
+        return 0, 0
 
 
 def monitor_geometry_at(x: int, y: int):
@@ -443,27 +477,16 @@ def monitor_geometry_at(x: int, y: int):
     return 0, 0, 0, 0
 
 
-def hypr_cursor_pos():
-    try:
-        out = subprocess.run(
-            ["hyprctl", "cursorpos"], capture_output=True, text=True,
-        ).stdout.strip()
-        x, y = map(int, out.split(","))
-        return x, y
-    except (ValueError, OSError):
-        return 0, 0
-
-
 def compute_target():
     x, y = hypr_cursor_pos()
     wx = win.get_allocated_width() or WIDTH
     mx, my, mw, mh = monitor_geometry_at(x, y)
     px = max(mx + 4, min(x - wx // 2, mx + mw - wx - 4))
     py = my + TOP_BAR_MARGIN + TOP_BAR_HEIGHT + POPUP_GAP
-    return px, py, (mx, my, mw, mh)
+    return px, py
 
 
-def move_to_target(px: int, py: int, _moff, attempts: list) -> bool:
+def move_to_target(px, py, attempts) -> bool:
     pid = os.getpid()
     try:
         out = subprocess.run(
@@ -489,9 +512,13 @@ def place() -> None:
     popup_theme.prepare(win)
     win.show_all()
     popup_theme.fade_in(win)
-    px, py, moff = compute_target()
+    px, py = compute_target()
     win.move(px, py)
-    GLib.timeout_add(60, lambda: move_to_target(px, py, moff, [12]))
+    GLib.timeout_add(60, lambda: move_to_target(px, py, [12]))
+
+
+win.connect("key-press-event", on_key)
+win.connect("focus-out-event", on_focus_out)
 
 
 def main() -> None:
@@ -523,7 +550,6 @@ def main() -> None:
         pass
 
     place()
-    scale.grab_focus()
     threading.Thread(target=watch_hypr_events, daemon=True).start()
 
     try:

@@ -153,7 +153,10 @@ hl.config({
         },
 
         blur = {
-            enabled = false,
+            enabled   = true,
+            size      = 3,
+            passes    = 1,
+            vibrancy  = 0.1696,
         },
     },
 
@@ -378,15 +381,6 @@ hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("/home/jairo/.local/bin/toggle_wallpa
 -- al mismo selector para que la tecla X fisica funcione siempre.
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd("/home/jairo/.local/bin/toggle_wallpaper_menu.sh"), { description = "Cambiar fondo de pantalla" })
 
--- Capturas de pantalla -> portapapeles (pegar con Ctrl+V)
--- Print          : pantalla completa
--- SHIFT + Print  : seleccionar region con el raton
--- SUPER + Print  : ventana activa
-hl.bind("Print",                    hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh screen"), { description = "Captura pantalla completa" })
-hl.bind("SHIFT + Print",            hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh region"), { description = "Captura de region" })
-hl.bind(mainMod .. " + Print",      hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh window"), { description = "Captura ventana activa" })
-hl.bind(mainMod .. " + SHIFT + S",  hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh region"), { description = "Captura de region" })
-
 -- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
 hl.bind("XF86AudioLowerVolume", hl.dsp.exec_cmd("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"),      { locked = true, repeating = true })
@@ -457,17 +451,6 @@ hl.window_rule({
     float = true,
 })
 
--- Desplegables de la barra (volumen, brillo, monitor, spotify, sistema):
--- flotantes, con las mismas esquinas y sin borde del compositor — el
--- contorno morado lo pinta su propio CSS, uno de Hyprland lo duplicaria.
-hl.window_rule({
-    name     = "float-bar-popups",
-    match    = { class = "^(volume_popup|brightness_popup|monitor_popup|spotify_popup|system_popup)\\.py$" },
-    float    = true,
-    rounding = 12,
-    border_size = 0,
-})
-
 -- Lanzador de aplicaciones (wofi) en ventana flotante
 hl.window_rule({
     name  = "float-wofi",
@@ -510,8 +493,3 @@ hl.window_rule({
     size   = "560 700",
     center = true,
 })
-})
-
--- ALT + TAB: cambiar entre ventanas abiertas
-hl.bind("ALT + TAB",         hl.dsp.window.cycle_next(),               { description = "Siguiente ventana" })
-hl.bind("ALT + SHIFT + TAB", hl.dsp.window.cycle_next({ prev = true }), { description = "Ventana anterior" })

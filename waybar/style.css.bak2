@@ -10,12 +10,10 @@
     text-shadow: 0 1px 3px rgba(12, 6, 28, 0.95);
 }
 
-/* La barra en si es invisible: solo se ven las cajitas de los modulos,
-   asi no queda una tira de cristal atravesando huecos vacios
-   (a los lados del reloj, entre grupos). */
 window#waybar {
-    background: transparent;
-    border: none;
+    background: linear-gradient(180deg, rgba(179, 157, 219, 0.20), rgba(179, 157, 219, 0.10));
+    border: 1px solid rgba(216, 180, 254, 0.35);
+    border-radius: 14px;
     color: #ffffff;
 }
 
@@ -42,8 +40,7 @@ button, .module {
     border-radius: 9px;
     padding: 0 7px;
     margin: 2px 1px;
-    background-color: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background-color: rgba(216, 180, 254, 0.10);
     transition: background-color 0.2s ease, color 0.2s ease,
                 box-shadow 0.2s ease;
 }
@@ -54,15 +51,13 @@ button:hover {
 
 /* ---- Workspaces (navegación) ---- */
 #workspaces {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background: rgba(216, 180, 254, 0.10);
     border-radius: 9px;
     padding: 0 3px;
 }
 
 #workspaces button {
     background: transparent;
-    border: none;
     padding: 0 6px;
     color: #cfc4ea;
 }
@@ -144,15 +139,13 @@ button:hover {
 
 /* ---- Sistema (grupo colapsable) ---- */
 #system {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background: rgba(216, 180, 254, 0.10);
     border-radius: 9px;
     margin: 2px 1px;
 }
 
 #system #custom-system {
     background: transparent;
-    border: none;
     color: #e3ccff;
     padding: 0 8px;
 }
@@ -166,13 +159,11 @@ button:hover {
 #system #disk,
 #system #temperature {
     background: rgba(192, 132, 252, 0.10);
-    border: none;
     color: #e4d9ff;
 }
 
 #system .system-child {
     background: rgba(192, 132, 252, 0.10);
-    border: none;
     color: #e4d9ff;
 }
 
@@ -213,8 +204,7 @@ button:hover {
 
 /* ---- Bandeja ---- */
 #tray {
-    background-color: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
+    background-color: rgba(216, 180, 254, 0.10);
     border-radius: 9px;
     padding: 0 6px;
 }
@@ -240,47 +230,4 @@ button:hover {
     background-color: #ef4444;
     color: #ffffff;
     box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
-}
-/* ---- Cluster derecho: una sola caja que une los iconos ----
-   Los modulos de la derecha se agrupan visualmente en un unico
-   contenedor con el mismo cristal y contorno que el grupo #system.
-   Sus hijos pierden borde propio: si no, quedarian cajitas anidadas
-   dentro de la caja grande. */
-.modules-right {
-    background: rgba(179, 157, 219, 0.16);
-    border: 1px solid rgba(109, 58, 192, 0.85);
-    border-radius: 11px;
-    padding: 0 3px;
-    margin: 2px 3px;
-}
-
-.modules-right .module,
-.modules-right button,
-.modules-right #system,
-.modules-right #tray {
-    background: transparent;
-    border: none;
-    margin: 2px 0;
-}
-
-/* Separadores tenues entre iconos, en vez de un borde por icono */
-.modules-right .module:not(:first-child) {
-    border-left: 1px solid rgba(109, 58, 192, 0.30);
-    border-radius: 0;
-}
-
-/* El boton de apagado conserva su acento rojo dentro de la caja */
-.modules-right #custom-power {
-    background-color: rgba(239, 68, 68, 0.22);
-    border-radius: 9px;
-    margin: 2px 1px;
-}
-
-.modules-right #custom-power:hover {
-    background-color: #ef4444;
-}
-
-.modules-right button:hover,
-.modules-right .module:hover {
-    background-color: rgba(216, 180, 254, 0.22);
 }

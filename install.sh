@@ -93,6 +93,7 @@ link_dotfiles() {
     # OpenCode
     backup_and_link "$DOTFILES_DIR/opencode/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
     backup_and_link "$DOTFILES_DIR/opencode/tui.json"       "$HOME/.config/opencode/tui.json"
+    backup_and_link "$DOTFILES_DIR/opencode/themes"         "$HOME/.config/opencode/themes"
 
     # Waybar
     [ -d "$DOTFILES_DIR/waybar" ] && \
@@ -182,6 +183,20 @@ install_system_configs() {
         sudo cp "$DOTFILES_DIR/etc/pacman.conf" /etc/pacman.conf
     [ -f "$DOTFILES_DIR/etc/makepkg.conf" ] && \
         sudo cp "$DOTFILES_DIR/etc/makepkg.conf" /etc/makepkg.conf
+
+    # Tema SDDM "nebula"
+    if [ -d "$DOTFILES_DIR/sddm/nebula" ]; then
+        info "Instalando tema SDDM 'nebula'..."
+        sudo mkdir -p /usr/share/sddm/themes/nebula
+        sudo cp -r "$DOTFILES_DIR/sddm/nebula/." /usr/share/sddm/themes/nebula/
+        sudo mkdir -p /etc/sddm.conf.d
+        sudo tee /etc/sddm.conf.d/10-nebula.conf >/dev/null <<EOF
+[Theme]
+Current=nebula
+EOF
+        ok "Tema SDDM instalado y activado"
+    fi
+
     ok "Configs del sistema procesadas"
 }
 
@@ -234,7 +249,7 @@ main() {
             echo "  --scripts   Copiar scripts a ~/.local/bin/"
             echo "  --services  Habilitar servicios systemd"
             echo "  --locale    Configurar locale y teclado"
-            echo "  --system    Copiar configs del sistema (/etc)"
+            echo "  --system    Copiar configs del sistema (/etc) + tema SDDM"
             echo "  --export    Exportar listas de paquetes actuales"
             echo "  --all       Todo lo anterior"
             exit 1

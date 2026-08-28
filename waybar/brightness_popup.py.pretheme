@@ -92,13 +92,6 @@ Gtk.StyleContext.add_provider_for_screen(
     Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
 )
 
-# Capa comun (fondo, borde, tipografia, sliders) y animacion de apertura,
-# compartidas por todos los desplegables de la barra.
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import popup_theme  # noqa: E402
-
-popup_theme.install()
-
 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
 win.add(box)
 
@@ -342,9 +335,7 @@ def place() -> None:
         win.set_visual(rgba)
     win.set_app_paintable(True)
     win.realize()
-    popup_theme.prepare(win)
     win.show_all()
-    popup_theme.fade_in(win)
     px, py, moff = compute_target()
     win.move(px, py)
     GLib.timeout_add(60, lambda: move_to_target(px, py, moff, [12]))

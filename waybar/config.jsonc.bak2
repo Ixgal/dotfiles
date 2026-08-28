@@ -22,12 +22,11 @@
         "bluetooth",
         "custom/monitor",
         "pulseaudio",
-        "custom/system",
+        "group/system",
         "backlight",
         "battery",
         "tray",
         "custom/media",
-        "custom/wallpaper",
         "custom/power"
     ],
 
@@ -51,13 +50,27 @@
         }
     },
 
-    // Estadisticas del sistema: panel desplegable hacia abajo, con
-    // CPU por nucleo, RAM, swap, disco, sensores y red en tiempo real.
+    // Estadísticas del sistema: colapsadas por defecto, clic para mostrar.
+    "group/system": {
+        "orientation": "horizontal",
+        "drawer": {
+            "transition-duration": 350,
+            "children-class": "system-child",
+            "click-to-reveal": true,
+            "transition-left-to-right": false
+        },
+        "modules": [
+            "custom/system",
+            "cpu",
+            "memory",
+            "disk",
+            "temperature"
+        ]
+    },
+
     "custom/system": {
         "format": "\uf0e4",
-        "tooltip": true,
-        "tooltip-format": "Estadísticas del sistema (clic para abrir)",
-        "on-click": "$HOME/.config/waybar/system_popup.py"
+        "tooltip": "Estadísticas del sistema (clic para mostrar/ocultar)"
     },
 
     "pulseaudio": {
@@ -111,13 +124,6 @@
         "format": "󰍹",
         "tooltip": false,
         "on-click": "$HOME/.config/waybar/monitor_popup.py"
-    },
-
-    // Selector de fondos (mismo menu que SUPER+X): clic abre, clic cierra
-    "custom/wallpaper": {
-        "format": " \uf02c8 ",
-        "tooltip": false,
-        "on-click": "/home/jairo/.local/bin/toggle_wallpaper_menu.sh"
     },
 
     "cpu": {
@@ -210,6 +216,6 @@
     "custom/power": {
         "format": " \uf011 ",
         "tooltip": false,
-        "on-click": "$HOME/.config/waybar/power_popup.py"
+        "on-click": "$HOME/.config/waybar/powermenu.sh"
     }
 }

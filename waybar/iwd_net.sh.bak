@@ -13,12 +13,12 @@ if eth_up eno1; then
         notify-send "Red" "Conectado por cable ($ip)"
         exit 0
     fi
-    printf '{"text":" 󰈀 ","alt":"connected","class":"connected","tooltip":"Cable: %s"}\n' "$ip"
+    printf '{"text":" \\uf0ac ","alt":"connected","class":"connected","tooltip":"Cable: %s"}\n' "$ip"
     exit 0
 fi
 
 if ! [ -d "/sys/class/net/$IFACE" ]; then
-    printf '{"text":" 󰲛 ","alt":"disconnected","class":"disconnected","tooltip":"Sin adaptador de red"}\n'
+    printf '{"text":" \\uf1eb ","alt":"disconnected","class":"disconnected","tooltip":"Sin adaptador de red"}\n'
     exit 0
 fi
 
@@ -30,7 +30,7 @@ if [ "$state" != "connected" ]; then
         notify-send "WiFi" "No hay conexión WiFi"
         exit 0
     fi
-    printf '{"text":" 󰖪 ","alt":"disconnected","class":"disconnected","tooltip":"Wifi no conectada"}\n'
+    printf '{"text":" \\uf1eb ","alt":"disconnected","class":"disconnected","tooltip":"Wifi no conectada"}\n'
     exit 0
 fi
 
@@ -39,18 +39,10 @@ net="$(printf '%s\n' "$out" | awk '{for(i=1;i<NF;i++) if($i=="network") print $(
 rssi="$(printf '%s\n' "$out" | awk '{for(i=1;i<NF;i++) if($i=="RSSI") print $(i+1)}')"
 [ -z "$rssi" ] && rssi="$(printf '%s\n' "$out" | awk '{for(i=1;i<NF;i++) if($i=="AverageRSSI") print $(i+1)}')"
 
-# Cobertura por RSSI (dBm): 4 niveles de barras en vez de dos
-# estados que se veian igual.
-if [ -z "$rssi" ]; then
-    icon="󰤨"
-elif [ "$rssi" -ge -55 ] 2>/dev/null; then
-    icon="󰤨"
-elif [ "$rssi" -ge -67 ] 2>/dev/null; then
-    icon="󰤥"
-elif [ "$rssi" -ge -75 ] 2>/dev/null; then
-    icon="󰤢"
+if [ -n "$rssi" ] && [ "$rssi" -le -67 ] 2>/dev/null; then
+    icon="\\uf6ab"
 else
-    icon="󰤟"
+    icon="\\uf1eb"
 fi
 
 if [ "$NOTIFY" = "--notify" ]; then
