@@ -107,6 +107,21 @@ link_dotfiles() {
         cp -rn "$DOTFILES_DIR/wallpapers/"* "$HOME/Pictures/Wallpapers/" 2>/dev/null || true
     fi
 
+    # Fuentes
+    if [ -d "$DOTFILES_DIR/fonts" ]; then
+        mkdir -p "$HOME/.local/share/fonts"
+        cp -n "$DOTFILES_DIR/fonts/"* "$HOME/.local/share/fonts/" 2>/dev/null || true
+        fc-cache -f "$HOME/.local/share/fonts" 2>/dev/null || true
+    fi
+
+    # Cursores
+    if [ -d "$DOTFILES_DIR/icons" ]; then
+        mkdir -p "$HOME/.local/share/icons"
+        for cursor in "$DOTFILES_DIR/icons/"*; do
+            [ -d "$cursor" ] && cp -rn "$cursor" "$HOME/.local/share/icons/" 2>/dev/null || true
+        done
+    fi
+
     # Kitty
     mkdir -p "$HOME/.config/kitty"
     backup_and_link "$DOTFILES_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
@@ -203,6 +218,15 @@ setup_locale() {
     ok "Locale configurado"
 }
 
+# ─── 5b. Restaurar ajustes dconf (colores, tema, etc) ──────────────
+apply_dconf() {
+    if [ -f "$DOTFILES_DIR/dconf/settings.ini" ]; then
+        info "Restaurando ajustes dconf..."
+        dconf load / < "$DOTFILES_DIR/dconf/settings.ini" 2>/dev/null || warn "No se pudo aplicar dconf"
+        ok "dconf restaurado"
+    fi
+}
+
 # ─── 6. Copiar archivos de configuración del sistema ────────────────
 install_system_configs() {
     info "Copiando configs del sistema (si existen)..."
@@ -257,6 +281,7 @@ main() {
             link_dotfiles
             install_scripts
             setup_locale
+            apply_dconf
             enable_services
             install_system_configs
             echo ""

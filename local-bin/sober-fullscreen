@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Fuerza Fullscreen=true en los ajustes de Roblox antes de lanzar Sober.
+F="$HOME/.var/app/org.vinegarhq.Sober/data/sober/appData/GlobalBasicSettings_13.xml"
+if [ -f "$F" ] && ! pgrep -f "sober" >/dev/null 2>&1; then
+    sed -i 's|\(<bool name="Fullscreen">\)false\(</bool>\)|\1true\2|' "$F"
+fi
+exec /usr/bin/flatpak run --branch=stable --arch=x86_64 --command=sober \
+     --file-forwarding org.vinegarhq.Sober -- "$@"
