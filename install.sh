@@ -68,6 +68,32 @@ link_dotfiles() {
     backup_and_link "$DOTFILES_DIR/bash/.bash_profile"  "$HOME/.bash_profile"
     backup_and_link "$DOTFILES_DIR/bash/.bash_logout"   "$HOME/.bash_logout"
 
+    # Zsh
+    backup_and_link "$DOTFILES_DIR/zsh/.zshrc"    "$HOME/.zshrc"
+    backup_and_link "$DOTFILES_DIR/zsh/.profile"  "$HOME/.profile"
+
+    # Git
+    backup_and_link "$DOTFILES_DIR/git/.gitconfig" "$HOME/.gitconfig"
+
+    # Fish
+    [ -d "$DOTFILES_DIR/fish" ] && \
+        backup_and_link "$DOTFILES_DIR/fish" "$HOME/.config/fish"
+
+    # Dunst
+    [ -d "$DOTFILES_DIR/dunst" ] && \
+        backup_and_link "$DOTFILES_DIR/dunst" "$HOME/.config/dunst"
+
+    # XDG (archivos sueltos de ~/.config)
+    if [ -d "$DOTFILES_DIR/xdg" ]; then
+        for file in "$DOTFILES_DIR/xdg"/*; do
+            [ -f "$file" ] || continue
+            backup_and_link "$file" "$HOME/.config/$(basename "$file")"
+        done
+    fi
+
+    # lean-ctx
+    backup_and_link "$DOTFILES_DIR/lean-ctx/layout.toml" "$HOME/.config/lean-ctx/layout.toml"
+
     # Hyprland
     backup_and_link "$DOTFILES_DIR/hypr/hyprland.conf"  "$HOME/.config/hypr/hyprland.conf"
     backup_and_link "$DOTFILES_DIR/hypr/hyprpaper.conf" "$HOME/.config/hypr/hyprpaper.conf"
@@ -94,6 +120,7 @@ link_dotfiles() {
     backup_and_link "$DOTFILES_DIR/opencode/opencode.jsonc" "$HOME/.config/opencode/opencode.jsonc"
     backup_and_link "$DOTFILES_DIR/opencode/tui.json"       "$HOME/.config/opencode/tui.json"
     backup_and_link "$DOTFILES_DIR/opencode/themes"         "$HOME/.config/opencode/themes"
+    backup_and_link "$DOTFILES_DIR/opencode/opencode-home.json" "$HOME/opencode.json"
 
     # Waybar
     [ -d "$DOTFILES_DIR/waybar" ] && \
