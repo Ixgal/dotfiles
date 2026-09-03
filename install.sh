@@ -281,7 +281,7 @@ main() {
         --export|-e)
             info "Exportando listas de paquetes..."
             comm -23 <(pacman -Qqe | sort) <(pacman -Qqm | sort) > "$DOTFILES_DIR/pacman-pkgs.txt"
-            pacman -Qqm > "$DOTFILES_DIR/aur-pkgs.txt"
+            pacman -Qqm | grep -vE "yay-bin|debug" > "$DOTFILES_DIR/aur-pkgs.txt"
             pacman -Qe > "$DOTFILES_DIR/all-pkgs.txt"
             flatpak list --app --columns=application 2>/dev/null | sort > "$DOTFILES_DIR/flatpak-pkgs.txt"
             ok "Listas exportadas a $DOTFILES_DIR/"
