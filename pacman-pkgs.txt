@@ -25,14 +25,12 @@ hyprland
 hyprland-protocols
 hyprpaper
 hyprpolkitagent
-intel-ucode
 iwd
 kdeconnect
 kitty
 kvantum
 lib32-gamemode
 libpulse
-libva-nvidia-driver
 linux
 linux-firmware
 mkinitcpio
@@ -45,7 +43,6 @@ noto-fonts
 noto-fonts-cjk
 noto-fonts-emoji
 npm
-nvidia-open
 nwg-dock-hyprland
 nwg-drawer
 opencode

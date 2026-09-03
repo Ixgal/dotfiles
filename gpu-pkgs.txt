@@ -1,0 +1,3 @@
+intel-ucode
+libva-nvidia-driver
+nvidia-open

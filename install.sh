@@ -33,6 +33,18 @@ install_packages() {
         ok "Pacman: $(wc -l < "$DOTFILES_DIR/pacman-pkgs.txt") paquetes"
     fi
 
+    # Paquetes opcionales de GPU (solo se instalan si existen en los repos)
+    if [ -f "$DOTFILES_DIR/gpu-pkgs.txt" ]; then
+        while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            if pacman -Si "$pkg" >/dev/null 2>&1; then
+                sudo pacman -S --needed --noconfirm "$pkg" 2>/dev/null || warn "No se pudo instalar: $pkg"
+            else
+                warn "Saltando $pkg (no disponible en esta máquina)"
+            fi
+        done < "$DOTFILES_DIR/gpu-pkgs.txt"
+    fi
+
     # Instalar yay si no existe
     if ! command -v yay &>/dev/null; then
         info "Instalando yay..."
