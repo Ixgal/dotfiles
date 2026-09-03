@@ -178,7 +178,7 @@ def project_usable(proj: Path) -> bool:
 def collect_wallpaper_engine() -> list[dict]:
     items = []
     seen = set()
-    for base, label in ((WE_WORKSHOP_DIR, "ws"), (WE_DEFAULT_DIR, "def")):
+    for base, label in ((WE_WORKSHOP_DIR, "ws"),):
         if not base.exists():
             continue
         for proj in sorted(p for p in base.iterdir() if p.is_dir()):
@@ -242,7 +242,7 @@ def build_yuck(items: list[dict]) -> str:
 (defvar wm_view "{view0}")
 
 (defwindow wallpaper-menu
-  :monitor 1
+  :monitor "DP-1"
   :geometry (geometry
              :x "0px"
              :y "0px"

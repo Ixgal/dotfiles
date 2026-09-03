@@ -1,0 +1,11 @@
+[Unit]
+Description=GPU Screen Recorder (replay mode)
+
+[Service]
+ExecStart=/home/jairo/.local/bin/gsr-replay.sh
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=default.target

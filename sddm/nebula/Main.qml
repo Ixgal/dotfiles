@@ -2,11 +2,14 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Effects
+import SddmComponents 2.0
 
 Item {
     id: root
     width: 1920
     height: 1080
+
+    TextConstants { id: textConstants }
 
     // Palette shared with waybar / rofi / kitty.
     readonly property color accent:     "#c084fc"

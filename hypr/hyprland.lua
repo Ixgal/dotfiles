@@ -42,7 +42,7 @@ hl.monitor({
 
 -- Set programs that you use
 local terminal    = "kitty"
-local fileManager = "dolphin"
+local fileManager = "nautilus"
 -- Lanzador de aplicaciones: nwg-drawer compacto, centrado y nacarado (SUPER)
 local menu        = "nwg-drawer -is 34 -spacing 10 -c 8 -ml 220 -mr 220 -mt 130 -mb 130"
 
@@ -58,6 +58,12 @@ local menu        = "nwg-drawer -is 34 -spacing 10 -c 8 -ml 220 -mr 220 -mt 130 
 --
 hl.on("hyprland.start", function ()
   hl.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ 0")
+  -- Portal de Hyprland para compartir pantalla (Discord, etc.): sin el,
+  -- el selector de captura sale vacio. Ademas se reinicia el portal
+  -- principal para que registre ScreenCast/Screenshot (carrera de arranque:
+  -- si arranca antes que la implementacion, no los expone).
+  hl.exec_cmd("systemctl --user start xdg-desktop-portal-hyprland")
+  hl.exec_cmd("sleep 1 && systemctl --user restart xdg-desktop-portal")
   hl.exec_cmd("LOCPATH=/home/jairo/.locales waybar")
   -- Daemon de minimize: escucha socket2 y emula el minimize (Hyprland no
   -- oculta ventanas nativamente). El taskbar envia set_minimized y el daemon
@@ -84,12 +90,15 @@ end)
 
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Environment-variables/
 
-hl.env("XCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("XCURSOR_SIZE", "22")
-hl.env("HYPRCURSOR_THEME", "Bibata-Modern-Classic")
-hl.env("HYPRCURSOR_SIZE", "22")
+hl.env("XCURSOR_THEME", "Posys_Cursor_Black")
+hl.env("XCURSOR_SIZE", "18")
+hl.env("HYPRCURSOR_THEME", "Posys-Cursor-Scalable-Black")
+hl.env("HYPRCURSOR_SIZE", "18")
 hl.env("LOCPATH", "/home/jairo/.locales")
 hl.env("LANG", "es_ES.UTF-8")
+hl.env("GTK_THEME", "Adwaita:dark")
+hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
+hl.env("PATH", "/home/jairo/.local/bin:" .. (os.getenv("PATH") or ""))
 
 
 -----------------------
@@ -153,7 +162,16 @@ hl.config({
         },
 
         blur = {
-            enabled = false,
+            enabled = true,
+            size    = 3,
+            passes  = 2,
+            noise   = 0.03,
+            vibrancy = 0.30,
+            vibrancy_darkness = 0.4,
+            contrast = 1.20,
+            brightness = 0.88,
+            popups = true,
+            new_optimizations = true,
         },
     },
 
@@ -194,7 +212,12 @@ hl.animation({ leaf = "zoomFactor",    enabled = true,  speed = 7,    bezier = "
 -- "Smart gaps" / "No gaps when only"
 -- uncomment all if you wish to use that.
 -- hl.workspace_rule({ workspace = "w[tv1]", gaps_out = 0, gaps_in = 0 })
--- hl.workspace_rule({ workspace = "f[1]",   gaps_out = 0, gaps_in = 0 })
+
+-- Workspace con una ventana expandida (estado nativo maximized, f[1]):
+-- el area de trabajo se pone a tope (sin gaps) para que la expandida ocupe
+-- todo el espacio sin margenes libres. Al restaurar o al heredar el estado
+-- otra ventana, la regla se reevalua sola (regla dinamica por estado).
+hl.workspace_rule({ workspace = "f[1]", gaps_out = 0, gaps_in = 0 })
 -- hl.window_rule({
 --     name  = "no-gaps-wtv1",
 --     match = { float = false, workspace = "w[tv1]" },
@@ -238,6 +261,15 @@ hl.config({
         force_default_wallpaper = -1,    -- Set to 0 or 1 to disable the anime mascot wallpapers
         disable_hyprland_logo   = false, -- If true disables the random hyprland logo / anime girl background. :(
         disable_splash_rendering = true, -- Quita las frases que aparecen abajo del todo (ej: "To rice, or not to rice")
+        -- Con una ventana expandida (maximizada) o fullscreen, al abrir o
+        -- enfocar otra ventana en mosaico esta hereda el estado (queda
+        -- encima) en vez de quedarse oculta debajo. Las flotantes (lanzador,
+        -- barras) solo se suben al frente, sin robar el estado.
+        on_focus_under_fullscreen = 1,
+        -- Al cerrar la ventana que tiene el estado expandido/fullscreen, la
+        -- siguiente ventana enfocada lo hereda: abres algo encima de la
+        -- expandida y al cerrarlo la anterior vuelve sola a pantalla completa.
+        exit_window_retains_fullscreen = 1,
     },
 })
 
@@ -270,13 +302,15 @@ hl.config({
 
 hl.config({
     input = {
-        kb_layout  = "es",
-        kb_variant = "dvorak",
+        kb_layout  = "es,es",            -- espanol (dvorak) y espanol (qwerty)
+        kb_variant = "dvorak,",
         kb_model   = "",
         kb_options = "",
         kb_rules   = "",
 
         follow_mouse = 1,
+
+        repeat_rate = 22, -- DEBUG temporal
 
         sensitivity = 0, -- -1.0 - 1.0, 0 means no modification.
 
@@ -315,22 +349,73 @@ hl.device({
 local mainMod = "SUPER" -- Sets "Windows" key as main modifier
 
 -- Example binds, see https://wiki.hypr.land/Configuring/Basics/Binds/ for more
-hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("flatpak run com.github.eneshecan.WhatsAppForLinux"))
+hl.bind(mainMod .. " + W", hl.dsp.exec_cmd("/home/jairo/.local/bin/zapzap-toggle.sh"))
 hl.bind(mainMod .. " + period", hl.dsp.exec_cmd(terminal))
 local closeWindowBind = hl.bind(mainMod .. " + C", hl.dsp.window.close())
 -- closeWindowBind:set_enabled(false)
 hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(fileManager))
-hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(menu))
+hl.bind(mainMod .. " + R", hl.dsp.exec_cmd("/home/jairo/.local/bin/drawer-toggle.sh"))
 hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("/home/jairo/.local/bin/launcher-toggle.sh 'com.brave.Browser Brave-browser Brave' flatpak run com.brave.Browser"))
 hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("/home/jairo/.local/bin/launcher-toggle.sh discord discord"))
 hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("/home/jairo/.local/bin/launcher-toggle.sh steam steam"))
+hl.bind(mainMod .. " + F9", hl.dsp.exec_cmd("/home/jairo/.local/bin/pavucontrol-toggle.sh"), { description = "Abrir/cerrar pavucontrol-qt" })
+hl.bind("F9", hl.dsp.exec_cmd("/home/jairo/.local/bin/gsr-toggle.sh"), { description = "Grabar clip con gpu-screen-recorder" })
+hl.bind(mainMod .. " + plus", hl.dsp.send_shortcut({ mods = "CTRL + SHIFT", key = "M", window = "class:discord" }), { description = "Silenciar Discord (global)" })
+hl.bind(mainMod .. " + exclamdown", hl.dsp.send_shortcut({ mods = "CTRL + SHIFT", key = "D", window = "class:discord" }), { description = "Ensordecer Discord (global)" })
 
--- Tecla SUPER sola: abre/cierra el lanzador (toggle)
-hl.bind(mainMod .. " + Super_L", hl.dsp.exec_cmd("/home/jairo/.local/bin/drawer-toggle.sh"), { release = true })
+-- SUPER sola abre/cierra el lanzador (wofi).
+-- Workaround para la regresion de Hyprland 0.56 (fix en PR #15904, aun no
+-- en 0.56.x): el bind de release de SUPER tambien se dispara tras cualquier
+-- combo (SUPER+W, SUPER+1...), asi que solo lanzamos wofi si no se pulso
+-- ninguna otra tecla mientras SUPER estaba pulsado.
+local superHeld  = false
+local superCombo = false
 
--- Segunda tecla SUPER (derecha), si existe
-hl.bind(mainMod .. " + Super_R", hl.dsp.exec_cmd("/home/jairo/.local/bin/drawer-toggle.sh"), { release = true })
+-- SUPER + SHIFT alterna entre espanol (dvorak) y espanol (qwerty).
+-- Solo se dispara si SHIFT fue la unica tecla pulsada junto a SUPER,
+-- para no estorbar a combos como SUPER+SHIFT+1 (mover a workspace).
+local shiftOnly = false
+
+local function toggleLayout()
+    hl.exec_cmd("hyprctl switchxkblayout all next")
+end
+
+local superLauncher = function()
+    if not superCombo then
+        hl.dispatch(hl.dsp.exec_cmd("pkill wofi || wofi --show drun"))
+    end
+end
+
+-- DEBUG temporal: registrar eventos de teclado
+hl.on("input.keyboard.key", function(keycode, _timeMs, state)
+    hl.exec_cmd("touch /tmp/kbd-evt-" .. keycode .. "-" .. state)
+    if keycode == 133 or keycode == 134 then -- SUPER_L / SUPER_R
+        if state == 1 then
+            superHeld  = true
+            superCombo = false
+            shiftOnly  = false
+            hl.exec_cmd("touch /tmp/kbd-SUPER-down")
+        else
+            superHeld = false
+            hl.exec_cmd("touch /tmp/kbd-SUPER-up-shiftOnly-" .. tostring(shiftOnly))
+            if shiftOnly then
+                hl.exec_cmd("touch /tmp/kbd-TOGGLE")
+                toggleLayout()
+            end
+        end
+    elseif superHeld and state == 1 then
+        if not superCombo then
+            superCombo = true
+            shiftOnly  = (keycode == 50 or keycode == 62) -- SHIFT_L / SHIFT_R
+        elseif keycode ~= 50 and keycode ~= 62 then
+            shiftOnly = false
+        end
+    end
+end)
+
+hl.bind("SUPER + SUPER_L", superLauncher, { release = true })
+hl.bind("SUPER + SUPER_R", superLauncher, { release = true })
 hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))    -- dwindle only
 
@@ -363,9 +448,10 @@ hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 -- Pantalla completa: SUPER + F (pulsar de nuevo para salir)
 hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen(), { description = "Pantalla completa" })
 
--- SUPER + ESPACIO: expande la ventana bajo el ratón poniéndola flotante,
--- por encima de las demás y ocupando todo el área bajo la waybar (sin
--- taparla). Al pulsarlo de nuevo vuelve a su sitio.
+-- SUPER + ESPACIO: expande la ventana bajo el ratón con el estado nativo
+-- "maximized" (ocupa el área de trabajo sin tapar la waybar). Al pulsarlo
+-- de nuevo vuelve a su sitio. Al abrir o enfocar otra ventana, esta hereda
+-- el estado y queda encima (misc:on_focus_under_fullscreen = 1).
 hl.bind(mainMod .. " + space", hl.dsp.exec_cmd("/home/jairo/.local/bin/window-expand-toggle.py"), { description = "Expandir ventana bajo el ratón" })
 
 -- Abrir opencode: SUPER + ñ (toggle, enfoca si ya está abierto)
@@ -378,14 +464,34 @@ hl.bind(mainMod .. " + X", hl.dsp.exec_cmd("/home/jairo/.local/bin/toggle_wallpa
 -- al mismo selector para que la tecla X fisica funcione siempre.
 hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd("/home/jairo/.local/bin/toggle_wallpaper_menu.sh"), { description = "Cambiar fondo de pantalla" })
 
+-- Mientras el selector de fondos está abierto, Hyprland entra en este submap
+-- y el menú se controla con el teclado: flechas (o h/l) para moverse,
+-- Enter para aplicar, Escape (o q) para cerrar. El script de toggle sale del
+-- submap al cerrar el menú.
+hl.define_submap("wallpapermenu", function()
+    local nav    = "/home/jairo/.config/eww/scripts/wallpaper_menu_nav.py"
+    local toggle = "/home/jairo/.local/bin/toggle_wallpaper_menu.sh"
+    hl.bind("left",     hl.dsp.exec_cmd(nav .. " prev"))
+    hl.bind("h",        hl.dsp.exec_cmd(nav .. " prev"))
+    hl.bind("right",    hl.dsp.exec_cmd(nav .. " next"))
+    hl.bind("l",        hl.dsp.exec_cmd(nav .. " next"))
+    hl.bind("Return",   hl.dsp.exec_cmd(nav .. " apply"))
+    hl.bind("KP_Enter", hl.dsp.exec_cmd(nav .. " apply"))
+    hl.bind("Escape",   hl.dsp.exec_cmd(nav .. " close"))
+    hl.bind("q",        hl.dsp.exec_cmd(nav .. " close"))
+    hl.bind(mainMod .. " + X", hl.dsp.exec_cmd(toggle))
+    hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(toggle))
+end)
+
 -- Capturas de pantalla -> portapapeles (pegar con Ctrl+V)
--- Print          : pantalla completa
--- SHIFT + Print  : seleccionar region con el raton
--- SUPER + Print  : ventana activa
+-- SUPER + SHIFT + B: seleccionar region con el raton  <- el principal
+-- Print            : pantalla completa
+-- SHIFT + Print    : seleccionar region con el raton
+-- SUPER + Print    : ventana activa
 hl.bind("Print",                    hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh screen"), { description = "Captura pantalla completa" })
 hl.bind("SHIFT + Print",            hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh region"), { description = "Captura de region" })
+hl.bind(mainMod .. " + SHIFT + B",  hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh region"), { description = "Captura de region" })
 hl.bind(mainMod .. " + Print",      hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh window"), { description = "Captura ventana activa" })
-hl.bind(mainMod .. " + SHIFT + S",  hl.dsp.exec_cmd("/home/jairo/.local/bin/screenshot.sh region"), { description = "Captura de region" })
 
 -- Laptop multimedia keys for volume and LCD brightness
 hl.bind("XF86AudioRaiseVolume", hl.dsp.exec_cmd("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })
@@ -440,6 +546,18 @@ hl.window_rule({
     no_focus = true,
 })
 
+-- Ventanas expandidas (estado nativo maximized): sin borde, sin esquinas
+-- redondeadas ni sombra, para que se distingan del mosaico normal y no
+-- parezcan flotantes. La regla es dinamica: se aplica al maximizar y se
+-- revierte sola al restaurar (tambien cuando otra ventana hereda el estado).
+hl.window_rule({
+    name        = "maximized-flush",
+    match       = { fullscreen_state_internal = 1 },
+    border_size = 0,
+    rounding    = 0,
+    no_shadow   = true,
+})
+
 -- Layer rules also return a handle.
 -- local overlayLayerRule = hl.layer_rule({
 --     name  = "no-anim-overlay",
@@ -468,11 +586,35 @@ hl.window_rule({
     border_size = 0,
 })
 
--- Lanzador de aplicaciones (wofi) en ventana flotante
+-- Kitty sin desenfoque del compositor: la terminal conserva su
+-- translucidez pero no desenfoca lo que hay detrás.
 hl.window_rule({
-    name  = "float-wofi",
-    match = { class = "^wofi$" },
-    float = true,
+    name    = "kitty-no-blur",
+    match   = { class = "^kitty$" },
+    no_blur = true,
+})
+
+-- Lanzador de aplicaciones (wofi): flotante, sin bordes del compositor
+-- (el contorno morado lo pinta su CSS) y con esquinas a juego con su radio.
+-- El desenfoque nacarado sale solo del blur global + su fondo translúcido.
+hl.window_rule({
+    name        = "float-wofi",
+    match       = { class = "^wofi$" },
+    float       = true,
+    rounding    = 14,
+    border_size = 0,
+})
+
+-- Explorador de archivos (nautilus) con el mismo estilo que wofi: flotante,
+-- sin bordes del compositor y esquinas a juego. La transparencia la pinta el
+-- propio GTK4 vía CSS (lamina rgba), sin opacity del compositor: asi el texto
+-- no se apaga.
+hl.window_rule({
+    name        = "float-nautilus",
+    match       = { class = "^(nautilus|org\\.gnome\\.Nautilus)$" },
+    float       = true,
+    rounding    = 14,
+    border_size = 0,
 })
 
 -- Cristal nacarado en el lanzador (nwg-drawer): desenfoca el fondo tras él
@@ -510,8 +652,19 @@ hl.window_rule({
     size   = "560 700",
     center = true,
 })
+
+-- pavucontrol-qt (F9): flotante y centrada para que no quede detrás de las
+-- ventanas en mosaico.
+hl.window_rule({
+    name   = "float-pavucontrol",
+    match  = { class = "pavucontrol-qt" },
+    float  = true,
+    size   = "900 700",
+    center = true,
 })
 
--- ALT + TAB: cambiar entre ventanas abiertas
-hl.bind("ALT + TAB",         hl.dsp.window.cycle_next(),               { description = "Siguiente ventana" })
-hl.bind("ALT + SHIFT + TAB", hl.dsp.window.cycle_next({ prev = true }), { description = "Ventana anterior" })
+-- ALT + TAB: pasa a la siguiente ventana y la expande (maximizada nativa).
+-- Si ya hay una expandida/fullscreen, la ventana enfocada hereda el estado
+-- y queda encima. Para volver a encuadrarla: SUPER + ESPACIO sobre ella.
+hl.bind("ALT + TAB",         hl.dsp.exec_cmd("/home/jairo/.local/bin/alt-tab-expand.py"),        { description = "Siguiente ventana al frente (expandida)" })
+hl.bind("ALT + SHIFT + TAB", hl.dsp.exec_cmd("/home/jairo/.local/bin/alt-tab-expand.py --prev"), { description = "Ventana anterior al frente (expandida)" })

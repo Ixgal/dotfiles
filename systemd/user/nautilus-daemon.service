@@ -1,0 +1,11 @@
+[Unit]
+Description=Nautilus daemon (config aislada lima-gtk)
+
+[Service]
+Type=simple
+ExecStart=/home/jairo/.local/bin/nautilus-daemon.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

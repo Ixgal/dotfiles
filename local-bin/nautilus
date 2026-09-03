@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+export XDG_CONFIG_HOME="$HOME/.config/lima-gtk"
+
+if ! systemctl --user is-active --quiet nautilus-daemon.service; then
+    systemctl --user start nautilus-daemon.service
+    for _ in $(seq 1 20); do
+        systemctl --user is-active --quiet nautilus-daemon.service && break
+        sleep 0.3
+    done
+fi
+
+if [ $# -eq 0 ]; then
+    gdbus call --session --dest org.gnome.Nautilus --object-path /org/gnome/Nautilus --method org.freedesktop.Application.Activate "{}" >/dev/null 2>&1 || exec /usr/bin/nautilus
+else
+    ARR=()
+    for a in "$@"; do
+        case "$a" in
+            file://*) uri="$a" ;;
+            *) uri="file://$(realpath "$a")" ;;
+        esac
+        ARR+=("'$uri'")
+    done
+    GV="[$(IFS=,; echo "${ARR[*]}")]"
+    gdbus call --session --dest org.gnome.Nautilus --object-path /org/gnome/Nautilus --method org.freedesktop.Application.Open "$GV" "{}" >/dev/null 2>&1 || exec /usr/bin/nautilus "$@"
+fi

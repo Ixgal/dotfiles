@@ -45,7 +45,7 @@ apply_static() {
     echo "static:$path" > "$STATE_FILE"
 
     # Visual feedback
-    notify-send -i image -t 2000 "Fondo de pantalla" "$(basename "$path")" 2>/dev/null
+    timeout 3 notify-send -i image -t 2000 "Fondo de pantalla" "$(basename "$path")" 2>/dev/null
 }
 
 apply_anim() {
@@ -56,7 +56,7 @@ apply_anim() {
     nohup mpvpaper -o "loop=inf no-audio" -f "$path" >/dev/null 2>&1 &
     sleep 1
     echo "anim:$path" > "$STATE_FILE"
-    notify-send -i image -t 2000 "Fondo animado" "$(basename "$path")" 2>/dev/null
+    timeout 3 notify-send -i image -t 2000 "Fondo animado" "$(basename "$path")" 2>/dev/null
 }
 
 get_monitors() {
@@ -78,15 +78,18 @@ apply_we() {
     pkill -x hyprpaper 2>/dev/null
     pkill -x mpvpaper 2>/dev/null
     sleep 0.3
-    nohup linux-wallpaperengine --silent --fps 30 "${args[@]}" "$path" >/dev/null 2>&1 &
+    # setsid desacopla el proceso del grupo del lanzador (EWW/submap),
+    # evitando que muera cuando el script que lo invoco termina.
+    setsid linux-wallpaperengine --silent --fps 30 "${args[@]}" "$path" \
+        >"$HOME/.cache/wallpaper-engine.log" 2>&1 &
     local pid=$!
     disown
     sleep 5
     if kill -0 "$pid" 2>/dev/null; then
         echo "we:$path" > "$STATE_FILE"
-        notify-send -i image -t 2000 "Fondo Wallpaper Engine" "$(basename "$path")" 2>/dev/null
+        timeout 3 notify-send -i image -t 2000 "Fondo Wallpaper Engine" "$(basename "$path")" 2>/dev/null
     else
-        notify-send -i dialog-error -t 3000 "Wallpaper Engine" "No se pudo iniciar: $(basename "$path")" 2>/dev/null
+        timeout 3 notify-send -i dialog-error -t 3000 "Wallpaper Engine" "No se pudo iniciar: $(basename "$path")" 2>/dev/null
         if [ -n "$prev_mode" ] && [ -n "$prev_path" ]; then
             "$0" "$prev_mode" "$prev_path"
         fi
